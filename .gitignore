@@ -1,0 +1,5 @@
+.claude/
+.eslintcache
+node_modules/
+captures/
+dist/
