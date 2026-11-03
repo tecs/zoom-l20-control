@@ -77,7 +77,7 @@ export const enumOf = (labels: string[]): EnumValueType => ({
   kind: 'enum',
   labels,
   label: (index) => labels[index],
-  decode: ([byte]) => byte,
+  decode: ([byte]) => (byte < labels.length ? byte : 0),
   encode: (value) => [(value | 0) & U7_MAX],
 });
 

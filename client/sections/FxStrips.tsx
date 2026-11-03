@@ -143,11 +143,7 @@ function FxKnob(props: FxKnobProps) {
 
 /** Effect selector + description +  knobs */
 function FxPanel(props: FxPanelProps) {
-  const effect = (): number => {
-    const value = props.bindings.effect[0]();
-    // Make sure the index is always in range
-    return value !== undefined && value < props.bindings.labels.length ? value : 0;
-  };
+  const effect = (): number => props.bindings.effect[0]() ?? 0;
   const setEffect = (value: number): void => props.bindings.effect[1](value);
   const description = (): string => FX_DESCRIPTIONS[props.index][effect()];
 

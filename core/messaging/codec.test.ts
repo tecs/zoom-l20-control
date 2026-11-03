@@ -25,7 +25,7 @@ describe('Codec', () => {
           value = 487;
           break;
         case 'enum':
-          value = 3;
+          value = field.type.labels.length - 1;
           break;
         default:
           value = 42;
