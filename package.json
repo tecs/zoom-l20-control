@@ -12,7 +12,7 @@
     "format:check": "prettier --check .",
     "lint": "eslint .",
     "preview": "vite preview",
-    "test": "node --test --experimental-test-coverage --test-coverage-include='{core,client,lib}/**/*.ts'",
+    "test": "node --test --experimental-test-coverage --test-coverage-include='{core,client,lib}/**/*.ts' --test-coverage-exclude='{client/testing,core/fixtures}/**' --test-coverage-exclude='**/*.test.ts'",
     "typecheck": "tsc --noEmit"
   },
   "overrides": {

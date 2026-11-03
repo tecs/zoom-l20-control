@@ -65,7 +65,7 @@ export default [
     },
   },
   {
-    files: ['**/*.test.ts', '**/*.test.tsx'],
+    files: ['**/*.test.ts', '**/*.test.tsx', 'client/testing/**', 'core/fixtures/**'],
     rules: {
       '@typescript-eslint/require-await': 'off',
     },

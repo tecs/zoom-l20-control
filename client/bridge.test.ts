@@ -1,23 +1,11 @@
-import { describe, it } from 'node:test';
+import { describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { createRoot } from 'solid-js';
 import { Store } from '../core/state/store.ts';
 import { MeterStore } from '../core/state/meters.ts';
 import { field, fieldRW, meterFrame } from './bridge.ts';
 import { P } from '../core/protocol/registry.ts';
 import type { MeterFrame } from '../core/messaging/meters.ts';
-
-const inRootIt = (name: string, test: () => void): void => {
-  it(name, () => {
-    createRoot((dispose) => {
-      try {
-        test();
-      } finally {
-        dispose();
-      }
-    });
-  });
-};
+import { inRootIt } from './testing/solid.ts';
 
 describe('Store <> Solid signal bridge', () => {
   describe('field()', () => {

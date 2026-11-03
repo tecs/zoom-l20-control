@@ -1,16 +1,13 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { decodeMeterFrame } from './meters.ts';
-
-const pad = (array: number[]) => Array.from({ length: 24 }, (_, i) => array[i] ?? 0);
-const frame = (mix: number, pre: number[], post: number[], tail: number[] = [0, 0]) =>
-  Uint8Array.from([0xf0, 0x52, 0x00, 0x00, 0x31, 0x04, mix, ...pad(pre), ...pad(post), tail[0], tail[1], 0xf7]);
+import { meterFrame } from '../fixtures/messages.ts';
 
 describe('decodeMeterFrame()', () => {
   it('decodes mono + stereo + FX points at the right offsets and full-scales', () => {
     const pre = [22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 12, 0, 0, 3, 0];
     const post = [44];
-    const result = decodeMeterFrame(frame(2, pre, post))!;
+    const result = decodeMeterFrame(meterFrame(2, pre, post))!;
     assert.equal(result.mix, 2);
     assert.equal(result.channels.length, 18);
     assert.equal(result.fx.length, 2);
@@ -20,12 +17,12 @@ describe('decodeMeterFrame()', () => {
   });
 
   it('decodes the master output meter from the trailing L/R pair', () => {
-    const result = decodeMeterFrame(frame(0, [], [], [6, 12]))!;
+    const result = decodeMeterFrame(meterFrame(0, [], [], [6, 12]))!;
     assert.deepEqual(result.master, { left: 0.5, right: 1 });
   });
 
   it('clamps over-full-scale to 1', () => {
-    const result = decodeMeterFrame(frame(0, [200], []))!;
+    const result = decodeMeterFrame(meterFrame(0, [200], []))!;
     assert.equal(result.channels[0].pre[0], 1);
   });
 

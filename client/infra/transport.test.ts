@@ -1,121 +1,7 @@
-import { afterEach, beforeEach, describe, it } from 'node:test';
+import { afterEach, beforeEach, describe } from 'node:test';
 import assert from 'node:assert/strict';
 import { BluetoothTransport, TRANSPORT_STATUS, type TransportStatus } from './transport.ts';
-
-type FakeCharacteristic = {
-  writes: number;
-  fail: null | (() => Error);
-  writeValueWithoutResponse(packet: BufferSource): Promise<void>;
-  addEventListener(type: string, listener: (event: Event) => void): void;
-  startNotifications(): Promise<void>;
-  notify(packet: number[]): void;
-  value?: DataView;
-};
-
-type FakeGatt = {
-  connected: boolean;
-  connect(): Promise<{
-    getPrimaryService(): Promise<{
-      getCharacteristic(): Promise<FakeCharacteristic>;
-    }>;
-  }>;
-  disconnect(): void;
-};
-
-type FakeDevice = {
-  id: string;
-  gatt: FakeGatt;
-  addEventListener(type: string, listener: () => void): void;
-};
-
-type FakeBluetooth = {
-  characteristic: FakeCharacteristic;
-  device: FakeDevice;
-  gatt: FakeGatt;
-  restore(): void;
-};
-
-// DOMException.name is what the transport branches on
-const domError = (name: string, message: string): Error => Object.assign(new Error(message), { name });
-
-// Minimal navigator.bluetooth stand-in
-const mockBluetooth = (): FakeBluetooth => {
-  const valueListeners: ((event: Event) => void)[] = [];
-  const characteristic: FakeCharacteristic = {
-    writes: 0,
-    fail: null,
-    async writeValueWithoutResponse() {
-      this.writes++;
-      if (this.fail) {
-        throw this.fail();
-      }
-    },
-    addEventListener(type, listener) {
-      if (type === 'characteristicvaluechanged' && !valueListeners.includes(listener)) {
-        valueListeners.push(listener);
-      }
-    },
-    async startNotifications() {},
-    notify(packet) {
-      this.value = new DataView(Uint8Array.from(packet).buffer);
-      valueListeners.forEach((listener) => listener.call(this, { target: this } as unknown as Event));
-    },
-  };
-  const gatt: FakeGatt = {
-    connected: true,
-    connect: async () => ({
-      getPrimaryService: async () => ({
-        getCharacteristic: async () => characteristic,
-      }),
-    }),
-    disconnect: () => {
-      gatt.connected = false;
-      disconnectListeners.forEach((listener) => listener());
-    },
-  };
-  const disconnectListeners: (() => void)[] = [];
-  const device: FakeDevice = {
-    id: 'fake-l20',
-    gatt,
-    addEventListener: (type, listener) => {
-      if (type === 'gattserverdisconnected') {
-        disconnectListeners.push(listener);
-      }
-    },
-  };
-  const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
-
-  Object.defineProperty(globalThis, 'navigator', {
-    value: {
-      bluetooth: {
-        requestDevice: async () => device,
-        getAvailability: async () => true,
-      },
-    },
-    configurable: true,
-    writable: true,
-  });
-
-  return {
-    characteristic,
-    device,
-    gatt,
-    restore() {
-      if (original) {
-        Object.defineProperty(globalThis, 'navigator', original);
-      } else {
-        delete (globalThis as { navigator?: unknown }).navigator;
-      }
-    },
-  };
-};
-
-const withFakeBluetoothIt = (name: string, run: (bluetooth: FakeBluetooth) => Promise<void>): void => {
-  it(name, async () => {
-    const bluetooth = mockBluetooth();
-    return run(bluetooth).finally(() => bluetooth.restore());
-  });
-};
+import { domError, withFakeBluetoothIt } from '../testing/bluetooth.ts';
 
 describe('BluetoothTransport', () => {
   let transport: BluetoothTransport;
@@ -219,13 +105,7 @@ describe('BluetoothTransport', () => {
   });
 
   describe('connect()', () => {
-    const failChooser = (error: Error): void => {
-      (navigator.bluetooth as unknown as { requestDevice(): Promise<never> }).requestDevice = async () => {
-        throw error;
-      };
-    };
-
-    withFakeBluetoothIt('resolves quietly and disconnected when the chooser is dismissed', async () => {
+    withFakeBluetoothIt('resolves quietly and disconnected when the chooser is dismissed', async ({ failChooser }) => {
       const seen: TransportStatus[] = [];
       transport.onStatus((status) => seen.push(status));
       failChooser(domError('NotFoundError', 'User cancelled the requestDevice() chooser.'));
@@ -234,7 +114,7 @@ describe('BluetoothTransport', () => {
       assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
     });
 
-    withFakeBluetoothIt('rejects with the setup hint when the chooser finds nothing', async () => {
+    withFakeBluetoothIt('rejects with the setup hint when the chooser finds nothing', async ({ failChooser }) => {
       const original = domError('NotFoundError', 'Bluetooth adapter not available.');
       failChooser(original);
 
@@ -256,7 +136,7 @@ describe('BluetoothTransport', () => {
       assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
     });
 
-    withFakeBluetoothIt('ignores a failure when another attempt already connected', async () => {
+    withFakeBluetoothIt('ignores a failure when another attempt already connected', async ({ failChooser }) => {
       const seen: TransportStatus[] = [];
       transport.onStatus((status) => seen.push(status));
       await transport.connect();

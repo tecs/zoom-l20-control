@@ -1,38 +1,9 @@
-import { describe, it, mock, type MockFunctionContext } from 'node:test';
+import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { Settings, type SettingSchemaEntry } from './settings.ts';
+import { createMockStorage } from '../testing/storage.ts';
 
 const SCHEMA: SettingSchemaEntry[] = [{ key: 'debug', label: 'x', type: 'bool', default: false }];
-
-function createMockStorage(overloads?: Partial<Storage>): Storage & {
-  mocks: { [K in 'getItem' | 'setItem' | 'removeItem' | 'clear' | 'key']: MockFunctionContext<Storage[K]> };
-} {
-  const storage: Map<string, string> = new Map();
-
-  const getItem = mock.fn(overloads?.getItem ?? ((key: string) => storage.get(key) ?? null));
-  const setItem = mock.fn(overloads?.setItem ?? ((key: string, value: string) => void storage.set(key, value)));
-  const removeItem = mock.fn(overloads?.removeItem ?? ((key: string) => void storage.delete(key)));
-  const clear = mock.fn(overloads?.clear ?? (() => void storage.clear()));
-  const key = mock.fn(overloads?.key ?? ((index: number) => [...storage.keys()][index] ?? null));
-
-  return {
-    get length() {
-      return storage.size;
-    },
-    getItem,
-    setItem,
-    removeItem,
-    clear,
-    key,
-    mocks: {
-      getItem: getItem.mock,
-      setItem: setItem.mock,
-      removeItem: removeItem.mock,
-      clear: clear.mock,
-      key: key.mock,
-    },
-  };
-}
 
 describe('Settings', () => {
   describe('get()', () => {

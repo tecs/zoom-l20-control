@@ -1,4 +1,4 @@
-import { describe, it, mock } from 'node:test';
+import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { Session } from './session.ts';
 import { Store } from '../../core/state/store.ts';
@@ -9,44 +9,14 @@ import { Log } from '../../core/state/log.ts';
 import { P } from '../../core/protocol/registry.ts';
 import { HANDSHAKE, DUMP_REQUEST, meterSelect } from '../../core/protocol/session.ts';
 import { BASELINE } from '../../core/fixtures/dumps.ts';
-import type { MidiMessage } from '../../core/messaging/blemidi.ts';
-import type { ShortMessage } from '../../core/protocol/midi.ts';
-import {
-  TRANSPORT_STATUS,
-  type ErrorHandler,
-  type MessageHandler,
-  type StatusHandler,
-  type TransportStatus,
-} from '../infra/transport.ts';
+import { midi, sysex, meterFrame } from '../../core/fixtures/messages.ts';
+import { TRANSPORT_STATUS, type TransportStatus } from '../infra/transport.ts';
+import { fakeTransport, fakeWakeLock } from '../testing/transport.ts';
+import { flush } from '../testing/async.ts';
 
 function setup() {
-  let messageHandler: MessageHandler = null;
-  let statusHandler: StatusHandler = null;
-  let errorHandler: ErrorHandler = null;
-
-  const sent: ShortMessage[] = [];
-  const sysex: number[][] = [];
-
-  const transport = {
-    sent,
-    sysex,
-    connect: mock.fn(async (): Promise<void> => {}),
-    autoConnect: mock.fn(async (): Promise<boolean> => true),
-    disconnect: mock.fn((): void => {}),
-    sendMessage: async (message: ShortMessage): Promise<void> => void sent.push(message),
-    sendSysEx: async (bytes: number[]): Promise<void> => void sysex.push(bytes),
-    onMessage: (handler: MessageHandler) => void (messageHandler = handler),
-    onStatus: (handler: StatusHandler) => void (statusHandler = handler),
-    onError: (handler: ErrorHandler) => void (errorHandler = handler),
-    receive: (message: MidiMessage) => messageHandler?.(message),
-    fail: (message: string) => errorHandler?.(message),
-    setStatus: (status: TransportStatus) => statusHandler?.(status),
-  };
-
-  const wakeLock = {
-    acquire: mock.fn(async (): Promise<void> => {}),
-    release: mock.fn(async (): Promise<void> => {}),
-  };
+  const transport = fakeTransport();
+  const wakeLock = fakeWakeLock();
 
   const log = new Log();
   const store = new Store();
@@ -57,17 +27,6 @@ function setup() {
 
   return { session, transport, wakeLock, log, store, meters, sceneState, transportState };
 }
-
-const midi = (status: number, d1: number, d2: number): MidiMessage => ({
-  type: 'midi',
-  bytes: Uint8Array.of(status, d1, d2),
-});
-const sysex = (...bytes: number[]): MidiMessage => ({ type: 'sysex', bytes: Uint8Array.from(bytes) });
-const meterFrame = (mix: number): MidiMessage =>
-  sysex(0xf0, 0x52, 0x00, 0x00, 0x31, 0x04, mix, ...new Array<number>(50).fill(0), 0xf7);
-
-// The connect handshake awaits each send - let those promises settle
-const flush = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
 
 describe('Session', () => {
   describe('outbound', () => {
@@ -115,9 +74,9 @@ describe('Session', () => {
     it('keeps only meter frames for the selected mix', () => {
       const { session, transport, meters } = setup();
       session.selectMix(2);
-      transport.receive(meterFrame(0));
+      transport.receive(sysex(...meterFrame(0)));
       assert.equal(meters.get(), null);
-      transport.receive(meterFrame(2));
+      transport.receive(sysex(...meterFrame(2)));
       assert.equal(meters.get()?.mix, 2);
     });
 
