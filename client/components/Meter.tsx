@@ -9,7 +9,7 @@ export interface Peaks {
 type MeterProps = {
   meter: Accessor<ChannelMeter | undefined>;
   bars: number;
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 type BarState = {
@@ -66,7 +66,7 @@ export function Meter(props: MeterProps) {
 
     // Disable
     const peaks = props.peaks;
-    if (!peaks || !peaks.show()) {
+    if (!peaks.show()) {
       if (barState.peakOn) {
         markEl.style.display = 'none';
         barState.peakOn = false;

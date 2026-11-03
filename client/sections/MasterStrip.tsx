@@ -9,7 +9,7 @@ import { Toggle } from '../components/Toggle.tsx';
 import { makeRecButton } from '../components/Control.tsx';
 
 type MasterStripProps = {
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 export function MasterStrip(props: MasterStripProps) {

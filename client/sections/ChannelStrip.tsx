@@ -15,7 +15,7 @@ type ChannelStripProps = {
   meter: Accessor<ChannelMeter | undefined>;
   stereo: boolean;
   openDetail(index: number): void;
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 export function ChannelStrip(props: ChannelStripProps) {

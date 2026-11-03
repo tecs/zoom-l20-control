@@ -5,7 +5,7 @@ type ToggleProps = {
   active: Accessor<boolean | undefined>;
   onClick(): void;
   label: string;
-  additionalClasses?: string;
+  additionalClasses?: string | undefined;
 };
 
 export const Toggle = (props: ToggleProps) => (

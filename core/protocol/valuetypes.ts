@@ -29,7 +29,7 @@ export interface BoolValueType extends BaseValueType<boolean, 'bool'> {
 export interface ScalarValueType extends BaseValueType<number, 'scalar'> {
   min: number;
   max: number;
-  center?: number;
+  center?: number | undefined;
 }
 
 export interface EnumValueType extends BaseValueType<number, 'enum'> {

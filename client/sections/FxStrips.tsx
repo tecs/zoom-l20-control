@@ -17,13 +17,13 @@ type FxStripProps = {
   mix: Accessor<number>;
   meter: Accessor<ChannelMeter | undefined>;
   openFx(index: number): void;
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 type FxStripsProps = {
   mix: Accessor<number>;
   openFx(index: number): void;
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 type FxKnobProps = {

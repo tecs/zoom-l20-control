@@ -9,7 +9,7 @@ import type { Peaks } from '../components/Meter.tsx';
 type StripsProps = {
   mix: Accessor<number>;
   openDetail(index: number): void;
-  peaks?: Peaks;
+  peaks: Peaks;
 };
 
 export function Strips(props: StripsProps) {

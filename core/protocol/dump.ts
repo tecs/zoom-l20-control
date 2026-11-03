@@ -6,7 +6,7 @@ export type State = Record<string, unknown>;
 export const setPath = (obj: State, path: string, value: unknown): void =>
   path.split('.').forEach((segment, i, segments) => {
     if (i === segments.length - 1) {
-      return (obj[segment] = value);
+      return void (obj[segment] = value);
     }
     obj = (obj[segment] ??= /^\d+$/.test(segments[i + 1]) ? [] : {}) as State;
   });

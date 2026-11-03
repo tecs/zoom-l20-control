@@ -13,7 +13,7 @@ export interface ControlOptions {
   label?: string;
   /** Readout without the unit suffix */
   bare?: boolean;
-  additionalClasses?: string;
+  additionalClasses?: string | undefined;
 }
 
 export function makeControl(store: Store, path: string, options: ControlOptions = {}): JSX.Element {

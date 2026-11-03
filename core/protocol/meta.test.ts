@@ -9,6 +9,7 @@ import {
   tableDistribution,
   familyRawReadout,
   PROVISIONAL_FAMILIES,
+  FAMILIES,
 } from './meta.ts';
 
 describe('Meta', () => {
@@ -126,12 +127,12 @@ describe('Meta', () => {
 
   test('every registry family has a META entry', () => {
     const families = [...new Set(REGISTRY.map(({ path }) => normalizePath(path)))];
-    const missing = families.filter((family) => !META[family]);
+    const missing = families.filter((family) => !metaFor(family));
     assert.deepEqual(missing, [], `families without metadata: ${missing.join(', ')}`);
   });
 
   test('every family with a unit carries a distribution', () => {
-    for (const [family, metadata] of Object.entries(META)) {
+    for (const [family, metadata] of Object.entries(FAMILIES)) {
       if (metadata.unit && !metadata.perEffect) {
         assert.ok(metadata.dist, `${family} has unit ${metadata.unit} but no dist`);
       }
@@ -162,7 +163,7 @@ describe('Meta', () => {
   });
 
   test('every table distribution is monotonic across the raw range', () => {
-    const distributions = Object.entries(META).filter(([, { dist }]) => dist?.kind === 'table');
+    const distributions = Object.entries(FAMILIES).filter(([, { dist }]) => dist?.kind === 'table');
     assert.ok(distributions.length >= 5, `only ${distributions.length} table families`);
     for (const [family, { dist }] of distributions) {
       let prev = -Infinity;

@@ -14,7 +14,7 @@ describe('Store', () => {
       store.subscribe((change) => notes.push(change));
       store.loadDump(BASELINE!);
 
-      assert.equal((store.state.strips as unknown[]).length, 18);
+      assert.equal((store.state['strips'] as unknown[]).length, 18);
       assert.equal(store.get('fx.1.effect'), 0);
       assert.equal(store.get('fx.1.tone'), 50);
       assert.equal(store.get('fx.1.decay'), 17);

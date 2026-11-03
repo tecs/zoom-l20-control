@@ -190,7 +190,7 @@ const LOWCUT_TICKS = [40, 80, 160, 320, 600];
 
 const EQ_GAIN = { unit: 'dB', default: 30, unity: 30, dist: linearDistribution(0, 60, -15, 15) };
 
-export const META: Record<string, FamilyMeta> = {
+export const META = {
   'strips.sends': { role: 'Level', unit: 'dB', default: 0, unity: 82, dist: FADER_DIST, ticks: FADER_TICKS },
   'strips.pan': {
     role: 'Pan',
@@ -239,9 +239,12 @@ export const META: Record<string, FamilyMeta> = {
   'recorder.currentMarker': { role: 'Marker', default: null, readOnly: true },
   'recorder.duration': { role: 'Duration', default: null, readOnly: true },
   'recorder.playhead': { role: 'Playhead', default: null, readOnly: true },
-};
+} satisfies Record<string, FamilyMeta>;
 
-export const metaFor = (path: string): FamilyMeta | null => META[normalizePath(path)] ?? null;
+/** `META` by an arbitrary runtime key */
+export const FAMILIES: Readonly<Record<string, FamilyMeta>> = META;
+
+export const metaFor = (path: string): FamilyMeta | null => FAMILIES[normalizePath(path)] ?? null;
 
 export const STRIP_NAMES = [
   '1',
@@ -285,10 +288,10 @@ export const GEQ_FREQS = [
 
 // Calibration utilities
 type ReadoutSample = { path: string; raw: unknown };
-type CalibrationReadout = { family: string; unit?: string | null; samples: ReadoutSample[] };
+type CalibrationReadout = { family: string; unit: FamilyMeta['unit']; samples: ReadoutSample[] };
 
 /** Families whose curve/unity are stubbed and still need a hardware sweep */
-export const PROVISIONAL_FAMILIES: string[] = Object.entries(META)
+export const PROVISIONAL_FAMILIES: string[] = Object.entries(FAMILIES)
   .filter(([, meta]) => meta.provisional)
   .map(([key]) => key);
 
@@ -307,6 +310,6 @@ export function familyRawReadout(store: MetaStore, family: string): ReadoutSampl
 export const calibrationReadout = (store: MetaStore): CalibrationReadout[] =>
   PROVISIONAL_FAMILIES.map((family) => ({
     family,
-    unit: META[family].unit,
+    unit: FAMILIES[family].unit,
     samples: familyRawReadout(store, family),
   }));

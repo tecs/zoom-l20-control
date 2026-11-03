@@ -17,6 +17,11 @@
     "allowJs": true,
     "checkJs": false,
     "noUncheckedSideEffectImports": true,
+    "erasableSyntaxOnly": true,
+    "noImplicitOverride": true,
+    "noImplicitReturns": true,
+    "noPropertyAccessFromIndexSignature": true,
+    "exactOptionalPropertyTypes": true,
     "types": ["node", "web-bluetooth", "vite/client"]
   },
   "include": ["core", "client", "lib", "tools"],
