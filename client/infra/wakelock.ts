@@ -12,7 +12,7 @@ export class WakeLock implements Lock {
     // Browsers release the lock when the tab is hidden - re-acquire on focus
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && this.sentinel) {
-        this.acquire();
+        void this.acquire();
       }
     });
   }

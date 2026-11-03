@@ -54,7 +54,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
 
     this.store.onSend = (messages) => this.onSend(messages);
     this.transport.onMessage((message) => this.onMessage(message));
-    this.transport.onStatus((status) => this.onStatus(status));
+    this.transport.onStatus((status) => void this.onStatus(status));
     this.transport.onError((message) => this.log.error(message, 'status'));
   }
 
@@ -68,12 +68,12 @@ export class Session extends Publisher<[status: TransportStatus]> {
 
   selectMix(mix: number): void {
     this.selectedMix = mix;
-    this.transport.sendMessage(meterSelect(mix));
+    void this.transport.sendMessage(meterSelect(mix));
   }
 
   /** Reconnects to the last mixer, without the chooser */
   autoConnect(): void {
-    this.transport.autoConnect();
+    void this.transport.autoConnect();
   }
 
   toggleConnection(): void {
@@ -90,7 +90,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
       this.log.warn('re-read: not connected', 'status');
       return;
     }
-    this.transport.sendSysEx(DUMP_REQUEST);
+    void this.transport.sendSysEx(DUMP_REQUEST);
     this.log.info('re-read state requested', 'status');
   }
 
@@ -99,12 +99,12 @@ export class Session extends Publisher<[status: TransportStatus]> {
   }
 
   send(message: ShortMessage): void {
-    this.transport.sendMessage(message);
+    void this.transport.sendMessage(message);
   }
 
   private onSend(messages: ShortMessage[]): void {
     for (const message of messages) {
-      this.transport.sendMessage(message);
+      void this.transport.sendMessage(message);
     }
 
     // Decode our own outbound bytes back to a readable path/value

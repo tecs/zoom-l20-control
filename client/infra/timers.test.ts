@@ -8,7 +8,7 @@ describe('sleep()', () => {
 
   it('sleeps for the given amount of milliseconds', async () => {
     let done = false;
-    sleep(100).then(() => (done = true));
+    void sleep(100).then(() => (done = true));
 
     mock.timers.tick(100);
     await Promise.resolve();
@@ -17,7 +17,7 @@ describe('sleep()', () => {
 
   it('does not finish sleeping before the given amount of milliseconds has passed', async () => {
     let done = false;
-    sleep(100).then(() => (done = true));
+    void sleep(100).then(() => (done = true));
 
     mock.timers.tick(50);
     await Promise.resolve();

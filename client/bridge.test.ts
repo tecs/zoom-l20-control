@@ -7,7 +7,7 @@ import { field, fieldRW, meterFrame } from './bridge.ts';
 import { P } from '../core/protocol/registry.ts';
 import type { MeterFrame } from '../core/messaging/meters.ts';
 
-const inRootIt = (name: string, test: () => void) =>
+const inRootIt = (name: string, test: () => void): void => {
   it(name, () => {
     createRoot((dispose) => {
       try {
@@ -17,6 +17,7 @@ const inRootIt = (name: string, test: () => void) =>
       }
     });
   });
+};
 
 describe('Store <> Solid signal bridge', () => {
   describe('field()', () => {

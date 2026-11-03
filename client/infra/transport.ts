@@ -59,10 +59,8 @@ export class BluetoothTransport implements Transport {
     this.errorHandler?.(`write failed - ${message} ${repeats > 0 ? `(repeated ${repeats} more times)` : ''}`),
   );
 
-  constructor() {
-    // This method needs to be passed by value while being bound to the class instance
-    this.onValue = this.onValue.bind(this);
-  }
+  // Not a method as it needs to be passed by value for referential equality while having `this` bound to the instance
+  private readonly valueListener = (event: Event): void => this.onValue(event);
 
   onError(handler: ErrorHandler) {
     this.errorHandler = handler;
@@ -240,7 +238,7 @@ export class BluetoothTransport implements Transport {
     const service = await server.getPrimaryService(BLE_MIDI_SERVICE_UUID);
     this.characteristic = await service.getCharacteristic(BLE_MIDI_CHARACTERISTIC_UUID);
     this.decoder = new BleMidiDecoder();
-    this.characteristic.addEventListener('characteristicvaluechanged', this.onValue);
+    this.characteristic.addEventListener('characteristicvaluechanged', this.valueListener);
     await this.characteristic.startNotifications();
     this.setStatus(TRANSPORT_STATUS.CONNECTED);
   }
@@ -269,7 +267,7 @@ export class BluetoothTransport implements Transport {
     const abortController = new AbortController();
     const { promise, resolve } = Promise.withResolvers<boolean>();
 
-    const onAdvertisement = async (): Promise<void> => {
+    const onAdvertisement = (): void => {
       device.removeEventListener('advertisementreceived', onAdvertisement);
       abortController.abort();
 
@@ -278,11 +276,9 @@ export class BluetoothTransport implements Transport {
         return resolve(true);
       }
 
-      resolve(
-        await this.attach(device).then(
-          () => true,
-          () => false,
-        ),
+      this.attach(device).then(
+        () => resolve(true),
+        () => resolve(false),
       );
     };
 

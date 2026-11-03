@@ -110,11 +110,12 @@ const mockBluetooth = (): FakeBluetooth => {
   };
 };
 
-const withFakeBluetoothIt = (name: string, run: (bluetooth: FakeBluetooth) => Promise<void>) =>
+const withFakeBluetoothIt = (name: string, run: (bluetooth: FakeBluetooth) => Promise<void>): void => {
   it(name, async () => {
     const bluetooth = mockBluetooth();
-    return run(bluetooth).finally(bluetooth.restore);
+    return run(bluetooth).finally(() => bluetooth.restore());
   });
+};
 
 describe('BluetoothTransport', () => {
   let transport: BluetoothTransport;

@@ -36,7 +36,7 @@ describe('Meta', () => {
   });
 
   test('the tempo distribution matches the wire formula', () => {
-    const distribution = META['tempo'].dist!;
+    const distribution = META.tempo.dist;
     assert.equal(distribution.toDomain(0), 40);
     assert.equal(distribution.toDomain(2100), 250);
     assert.equal(distribution.toRaw(120), 800);
@@ -150,15 +150,15 @@ describe('Meta', () => {
   });
 
   test('calibrated families reflect the hardware sweep', () => {
-    assert.equal(META['strips.sends'].dist!.toDomain(0), -Infinity); // floor
-    assert.equal(META['strips.sends'].dist!.toDomain(82), 0); // channel-fader unity
-    assert.equal(META['strips.sends'].dist!.toDomain(120), 10); // top
+    assert.equal(META['strips.sends'].dist.toDomain(0), -Infinity); // floor
+    assert.equal(META['strips.sends'].dist.toDomain(82), 0); // channel-fader unity
+    assert.equal(META['strips.sends'].dist.toDomain(120), 10); // top
     assert.equal(META['strips.sends'].unity, 82);
     assert.equal(META['master.level'].dist, META['strips.sends'].dist); // master shares the fader taper
     assert.equal(META['fx.sends'].dist, META['strips.sends'].dist); // FX-return fader too
-    assert.equal(META['monitors.level'].dist!.toDomain(77), 0); // monitor unity
-    assert.equal(META['monitors.level'].dist!.toDomain(118), 15); // monitors reach +15
-    assert.equal(META['strips.fx1Send'].dist!.toDomain(45), 0); // send unity
+    assert.equal(META['monitors.level'].dist.toDomain(77), 0); // monitor unity
+    assert.equal(META['monitors.level'].dist.toDomain(118), 15); // monitors reach +15
+    assert.equal(META['strips.fx1Send'].dist.toDomain(45), 0); // send unity
     assert.equal(META['strips.fx1Send'].dist, META['strips.fx2Send'].dist); // both FX sends share one taper
   });
 
@@ -182,8 +182,8 @@ describe('Meta', () => {
   test('reset defaults match the baseline dump', () => {
     assert.equal(META['geq.on'].default, 0); // off
     assert.equal(META['fx.effect'].default, 0); // Hall1 / Hall3
-    assert.equal(META['tempo'].default, 800); // 120 BPM
-    assert.equal(META['sceneDirty'].readOnly, true);
+    assert.equal(META.tempo.default, 800); // 120 BPM
+    assert.equal(META.sceneDirty.readOnly, true);
     assert.equal(META['fx.tone'].resetToMid, true); // per-effect midpoint (fxeffects.fxKnobDefault)
   });
 });

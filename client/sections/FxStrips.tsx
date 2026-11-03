@@ -16,13 +16,13 @@ type FxStripProps = {
   bindings: FxFaceBindings;
   mix: Accessor<number>;
   meter: Accessor<ChannelMeter | undefined>;
-  openFx(index: number): void;
+  openFx: (index: number) => void;
   peaks: Peaks;
 };
 
 type FxStripsProps = {
   mix: Accessor<number>;
-  openFx(index: number): void;
+  openFx: (index: number) => void;
   peaks: Peaks;
 };
 

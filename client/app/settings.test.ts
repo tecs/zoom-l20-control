@@ -121,7 +121,7 @@ describe('Settings', () => {
   describe('subscribe()', () => {
     it('does not notify on setting the same value', () => {
       const settings = new Settings(SCHEMA, createMockStorage());
-      const fn = mock.fn();
+      const fn = mock.fn<(key: string, value: unknown) => void>();
 
       settings.subscribe(fn);
 

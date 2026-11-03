@@ -48,7 +48,7 @@ export function Scenes(props: { press: (idx: number) => void | Promise<void> }) 
 
   return (
     <div id="scenes">
-      <button type="button" class="toggle" classList={{ on: scene().on }} onClick={() => props.press(SCENE.ON)}>
+      <button type="button" class="toggle" classList={{ on: scene().on }} onClick={() => void props.press(SCENE.ON)}>
         SCENE
       </button>
       <button
@@ -61,12 +61,17 @@ export function Scenes(props: { press: (idx: number) => void | Promise<void> }) 
       </button>
       <For each={SCENE_SLOTS}>
         {(n) => (
-          <button type="button" class="scene-slot" classList={{ active: scene().active === n }} onClick={() => slot(n)}>
+          <button
+            type="button"
+            class="scene-slot"
+            classList={{ active: scene().active === n }}
+            onClick={() => void slot(n)}
+          >
             {n}
           </button>
         )}
       </For>
-      <button type="button" onClick={reset}>
+      <button type="button" onClick={() => void reset()}>
         Reset
       </button>
       <div id="tempoBox">

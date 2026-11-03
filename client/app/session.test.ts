@@ -64,7 +64,7 @@ const midi = (status: number, d1: number, d2: number): MidiMessage => ({
 });
 const sysex = (...bytes: number[]): MidiMessage => ({ type: 'sysex', bytes: Uint8Array.from(bytes) });
 const meterFrame = (mix: number): MidiMessage =>
-  sysex(0xf0, 0x52, 0x00, 0x00, 0x31, 0x04, mix, ...Array(50).fill(0), 0xf7);
+  sysex(0xf0, 0x52, 0x00, 0x00, 0x31, 0x04, mix, ...new Array<number>(50).fill(0), 0xf7);
 
 // The connect handshake awaits each send - let those promises settle
 const flush = (): Promise<void> => new Promise((resolve) => setImmediate(resolve));
@@ -234,7 +234,7 @@ describe('Session', () => {
 
     it('logs unknown SysEx, cut after 12 bytes', () => {
       const { transport, log } = setup();
-      transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x7f, ...Array(10).fill(0x11), 0xf7));
+      transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x7f, ...new Array<number>(10).fill(0x11), 0xf7));
       assert.equal(log.entries().at(-1)?.text, 'RX  sysex f0 52 00 00 7f 11 11 11 11 11 11 11 ...');
     });
   });

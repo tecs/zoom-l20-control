@@ -6,7 +6,7 @@ import type { ShortMessage } from '../../core/protocol/midi.ts';
 const zeroPad = (value: number, digits: number): string => String(value).padStart(digits, '0');
 
 type TransportProps = {
-  send(message: ShortMessage): void;
+  send: (message: ShortMessage) => void;
 };
 
 type HoldButtonProps = TransportProps & {

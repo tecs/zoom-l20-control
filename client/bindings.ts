@@ -34,7 +34,7 @@ export interface FxFaceBindings {
 export function stripBindings(store: Store, index: number): StripBindings {
   const stripPaths = P.strip(index);
   return {
-    sends: [...Array(LAYOUT.mixes)].map((_, mix) => fieldRW<number>(store, stripPaths.send(mix))),
+    sends: Array.from({ length: LAYOUT.mixes }, (_, mix) => fieldRW<number>(store, stripPaths.send(mix))),
     mute: fieldRW<boolean>(store, stripPaths.mute),
     solo: fieldRW<boolean>(store, stripPaths.solo),
     name: field<string>(store, stripPaths.name),
@@ -45,7 +45,7 @@ export function stripBindings(store: Store, index: number): StripBindings {
 export function fxFaceBindings(store: Store, index: number): FxFaceBindings {
   const fxPaths = P.fx(index);
   return {
-    sends: [...Array(LAYOUT.mixes)].map((_, mix) => fieldRW<number>(store, fxPaths.send(mix))),
+    sends: Array.from({ length: LAYOUT.mixes }, (_, mix) => fieldRW<number>(store, fxPaths.send(mix))),
     mute: fieldRW<boolean>(store, fxPaths.mute),
     solo: fieldRW<boolean>(store, fxPaths.solo),
     send: (mix) => fxPaths.send(mix),

@@ -99,7 +99,7 @@ export const str = (length: number): StringValueType => ({
   // These strings are null-padded, so trim/pad where necessary
   decode: (bytes) => String.fromCharCode(...bytes).replace(/\0+$/, ''),
   encode: (value) => {
-    const bytes = new Array(length).fill(0);
+    const bytes = new Array<number>(length).fill(0);
     const scanLength = Math.min(length, value.length);
     for (let char = 0; char < scanLength; char++) {
       bytes[char] = value.charCodeAt(char) & U7_MAX;

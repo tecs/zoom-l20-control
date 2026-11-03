@@ -49,7 +49,10 @@ export class Settings extends Publisher<[key: string, value: unknown]> {
     try {
       const raw = this.storage.getItem(STORAGE_KEY);
       if (raw) {
-        return JSON.parse(raw) ?? {};
+        const parsed: unknown = JSON.parse(raw);
+        if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+          return parsed as Record<string, unknown>;
+        }
       }
     } catch {}
     return {};

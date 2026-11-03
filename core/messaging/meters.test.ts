@@ -2,7 +2,7 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { decodeMeterFrame } from './meters.ts';
 
-const pad = (array: number[]) => [...Array(24)].map((_, i) => array[i] ?? 0);
+const pad = (array: number[]) => Array.from({ length: 24 }, (_, i) => array[i] ?? 0);
 const frame = (mix: number, pre: number[], post: number[], tail: number[] = [0, 0]) =>
   Uint8Array.from([0xf0, 0x52, 0x00, 0x00, 0x31, 0x04, mix, ...pad(pre), ...pad(post), tail[0], tail[1], 0xf7]);
 

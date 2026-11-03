@@ -11,7 +11,7 @@ class DummyPublisher extends Publisher<[data: string]> {
 describe('Publisher', () => {
   it('registers a subscriber to receive events', () => {
     const publisher = new DummyPublisher();
-    const subscriber = mock.fn();
+    const subscriber = mock.fn<(data: string) => void>();
 
     publisher.subscribe(subscriber);
     publisher.fire('foo');
@@ -26,8 +26,8 @@ describe('Publisher', () => {
 
   it('allows multiple subscribers to receive events', () => {
     const publisher = new DummyPublisher();
-    const subscriber1 = mock.fn();
-    const subscriber2 = mock.fn();
+    const subscriber1 = mock.fn<(data: string) => void>();
+    const subscriber2 = mock.fn<(data: string) => void>();
 
     publisher.subscribe(subscriber1);
     publisher.subscribe(subscriber2);
@@ -41,7 +41,7 @@ describe('Publisher', () => {
 
   it('registers the same subscriber once', () => {
     const publisher = new DummyPublisher();
-    const subscriber = mock.fn();
+    const subscriber = mock.fn<(data: string) => void>();
 
     publisher.subscribe(subscriber);
     publisher.subscribe(subscriber);
@@ -56,8 +56,8 @@ describe('Publisher', () => {
 
   it('stops notifying after unsubscribing, by either form', () => {
     const publisher = new DummyPublisher();
-    const subscriber1 = mock.fn();
-    const subscriber2 = mock.fn();
+    const subscriber1 = mock.fn<(data: string) => void>();
+    const subscriber2 = mock.fn<(data: string) => void>();
 
     const unsubscribe1 = publisher.subscribe(subscriber1);
     publisher.subscribe(subscriber2);
@@ -82,7 +82,7 @@ describe('Publisher', () => {
 
   it('tolerates unsubscribing twice, or a subscriber that was never added', () => {
     const publisher = new DummyPublisher();
-    const subscriber = mock.fn();
+    const subscriber = mock.fn<(data: string) => void>();
 
     const unsubscribe = publisher.subscribe(subscriber);
     unsubscribe();

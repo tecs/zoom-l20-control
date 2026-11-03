@@ -11,7 +11,7 @@ export default [
     ignores: ['**/node_modules/', '**/dist/'],
   },
   eslintJs.configs.recommended,
-  ...typescriptEslint.configs.recommended,
+  ...typescriptEslint.configs.recommendedTypeChecked,
   eslintImport.flatConfigs.typescript,
   eslintSolidTs,
   {
@@ -24,13 +24,22 @@ export default [
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {
       '@typescript-eslint/no-shadow': 'error',
       '@typescript-eslint/no-this-alias': 'off',
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', caughtErrorsIgnorePattern: '^_' }],
+      // node:test's describe/it/test return promises the runner tracks itself
+      '@typescript-eslint/no-floating-promises': [
+        'error',
+        { allowForKnownSafeCalls: [{ from: 'package', package: 'node:test', name: ['describe', 'it', 'test'] }] },
+      ],
       'class-methods-use-this': 'error',
+      'dot-notation': 'off',
+      '@typescript-eslint/dot-notation': 'error',
       eqeqeq: 'error',
       'import-x/extensions': ['error', 'ignorePackages', { ts: 'always', tsx: 'always', js: 'always', jsx: 'always' }],
       'no-console': 'warn',
@@ -54,6 +63,16 @@ export default [
       'prefer-const': 'error',
       'spaced-comment': 'error',
     },
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx'],
+    rules: {
+      '@typescript-eslint/require-await': 'off',
+    },
+  },
+  {
+    files: ['*.js', '*.config.ts'],
+    ...typescriptEslint.configs.disableTypeChecked,
   },
   {
     // `no-unassigned-vars` can't see Solid's ref idiom

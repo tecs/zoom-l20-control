@@ -1,6 +1,6 @@
 import { describe, it, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { SceneState } from './scenes.ts';
+import { SceneState, type SceneStatus } from './scenes.ts';
 
 describe('SceneState', () => {
   it('constructs a scene state', () => {
@@ -21,7 +21,7 @@ describe('SceneState', () => {
 
   it('emits only if values have changed', () => {
     const scenes = new SceneState();
-    const subscriber = mock.fn();
+    const subscriber = mock.fn<(status: SceneStatus) => void>();
     scenes.subscribe(subscriber);
 
     scenes.setOn(true);

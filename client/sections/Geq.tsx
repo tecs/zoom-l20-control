@@ -59,7 +59,7 @@ export function Geq() {
       <div class="geq-head">
         <span class="out-title">Graphic EQ</span>
         <OnToggle />
-        <button type="button" onClick={flat}>
+        <button type="button" onClick={() => void flat()}>
           Flat
         </button>
       </div>

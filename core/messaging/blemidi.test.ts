@@ -37,7 +37,7 @@ describe('BLE-MIDI', () => {
     });
 
     it('round-trips a multi-packet SysEx through the decoder', () => {
-      const long = [0xf0, 0x52, 0x00, 0x00, 0x2a, ...Array(60).fill(0x11), 0xf7];
+      const long = [0xf0, 0x52, 0x00, 0x00, 0x2a, ...new Array<number>(60).fill(0x11), 0xf7];
       const packets = encodeSysEx(long);
       assert.ok(packets.length > 1, 'should split across packets');
 
