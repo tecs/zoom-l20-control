@@ -1,4 +1,5 @@
 import { it } from 'node:test';
+import { createMockStorage } from './storage.ts';
 
 type FakeCharacteristic = {
   writes: number;
@@ -30,6 +31,7 @@ export type FakeBluetooth = {
   characteristic: FakeCharacteristic;
   device: FakeDevice;
   gatt: FakeGatt;
+  storage: ReturnType<typeof createMockStorage>;
   /** Makes the device chooser reject with `error` (dismissed, nothing found, ...) */
   failChooser: (error: Error) => void;
   restore(): void;
@@ -82,6 +84,8 @@ export const mockBluetooth = (): FakeBluetooth => {
     },
   };
   const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
+  const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  const storage = createMockStorage();
 
   const bluetooth = {
     requestDevice: async (): Promise<FakeDevice> => device,
@@ -93,11 +97,13 @@ export const mockBluetooth = (): FakeBluetooth => {
     configurable: true,
     writable: true,
   });
+  Object.defineProperty(globalThis, 'localStorage', { value: storage, configurable: true, writable: true });
 
   return {
     characteristic,
     device,
     gatt,
+    storage,
     failChooser: (error) => {
       bluetooth.requestDevice = async () => {
         throw error;
@@ -108,6 +114,11 @@ export const mockBluetooth = (): FakeBluetooth => {
         Object.defineProperty(globalThis, 'navigator', original);
       } else {
         delete (globalThis as { navigator?: unknown }).navigator;
+      }
+      if (originalStorage) {
+        Object.defineProperty(globalThis, 'localStorage', originalStorage);
+      } else {
+        delete (globalThis as { localStorage?: unknown }).localStorage;
       }
     },
   };

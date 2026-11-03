@@ -105,6 +105,11 @@ describe('BluetoothTransport', () => {
   });
 
   describe('connect()', () => {
+    withFakeBluetoothIt('remembers the connected device for the next auto-connect', async ({ storage }) => {
+      await transport.connect();
+      assert.equal(storage.getItem('zoom-l20-control.lastDeviceId'), 'fake-l20');
+    });
+
     withFakeBluetoothIt('resolves quietly and disconnected when the chooser is dismissed', async ({ failChooser }) => {
       const seen: TransportStatus[] = [];
       transport.onStatus((status) => seen.push(status));
