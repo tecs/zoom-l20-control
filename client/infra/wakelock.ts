@@ -1,5 +1,7 @@
 // Keep the display awake during a session
 
+import { screenWakeLock } from './browser.ts';
+
 export interface Lock {
   acquire(): Promise<void>;
   release(): Promise<void>;
@@ -18,7 +20,7 @@ export class WakeLock implements Lock {
   }
 
   async acquire(): Promise<void> {
-    this.sentinel = (await navigator.wakeLock?.request('screen').catch(() => {})) ?? null;
+    this.sentinel = (await screenWakeLock()?.request('screen').catch(() => {})) ?? null;
   }
 
   async release(): Promise<void> {

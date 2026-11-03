@@ -10,6 +10,7 @@ import {
 } from '../../core/messaging/blemidi.ts';
 import type { ShortMessage } from '../../core/protocol/midi.ts';
 import { sleep } from './timers.ts';
+import { bluetooth, watchAdvertisements } from './browser.ts';
 import { Coalescer } from '../../lib/coalescer.ts';
 
 const DEVICE_NAME_PREFIX = 'L-20';
@@ -77,12 +78,13 @@ export class BluetoothTransport implements Transport {
   /** Manual connect via UI chooser (needs a user gesture) */
   async connect(): Promise<void> {
     // Wrong browser, insecure context or the API is switched off
-    if (!navigator.bluetooth) {
+    const webBluetooth = bluetooth();
+    if (!webBluetooth) {
       this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
       throw new Error(HINT_BLUETOOTH_NOT_AVAILABLE);
     }
 
-    const adapterAvailable = await navigator.bluetooth.getAvailability?.();
+    const adapterAvailable = await webBluetooth.getAvailability?.();
     if (!adapterAvailable) {
       this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
       throw new Error(HINT_ADAPTER_NOT_FOUND);
@@ -90,7 +92,7 @@ export class BluetoothTransport implements Transport {
 
     this.setStatus(TRANSPORT_STATUS.CONNECTING);
     try {
-      const device = await navigator.bluetooth.requestDevice({
+      const device = await webBluetooth.requestDevice({
         filters: [{ namePrefix: DEVICE_NAME_PREFIX }],
         optionalServices: [BLE_MIDI_SERVICE_UUID],
       });
@@ -122,11 +124,12 @@ export class BluetoothTransport implements Transport {
    * - #enable-experimental-web-platform-features (watchAdvertisements)
    */
   async autoConnect(): Promise<boolean> {
-    if (!navigator.bluetooth?.getDevices) {
+    const webBluetooth = bluetooth();
+    if (!webBluetooth?.getDevices) {
       return false;
     }
 
-    const devices = await navigator.bluetooth.getDevices().catch(() => []);
+    const devices = await webBluetooth.getDevices().catch(() => []);
     let lastId: string | null = null;
     try {
       lastId = localStorage.getItem(LAST_DEVICE_KEY);
@@ -260,7 +263,8 @@ export class BluetoothTransport implements Transport {
   }
 
   private async passiveConnect(device: BluetoothDevice, timeout: number): Promise<boolean> {
-    if (!device.watchAdvertisements) {
+    const watch = watchAdvertisements(device);
+    if (!watch) {
       return false;
     }
 
@@ -284,7 +288,7 @@ export class BluetoothTransport implements Transport {
 
     device.addEventListener('advertisementreceived', onAdvertisement);
     try {
-      await device.watchAdvertisements({ signal: abortController.signal });
+      await watch({ signal: abortController.signal });
     } catch {
       device.removeEventListener('advertisementreceived', onAdvertisement);
       return false;

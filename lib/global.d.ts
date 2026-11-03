@@ -5,4 +5,6 @@ declare global {
   type DeepReadonly<T> = {
     readonly [K in keyof T]: T[K] extends object ? DeepReadonly<T[K]> : T[K];
   };
+
+  type WithOptional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
 }
