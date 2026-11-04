@@ -1,7 +1,7 @@
 // Turns incoming MIDI into state updates and outgoing field changes into commands
 
 import { REGISTRY, BY_PATH, type Descriptor } from '../protocol/registry.ts';
-import type { Value } from '../protocol/valuetypes.ts';
+import { assertNever, type Value } from '../protocol/valuetypes.ts';
 import type { ShortMessage } from '../protocol/midi.ts';
 
 export interface DecodeResult {
@@ -27,11 +27,16 @@ for (const field of REGISTRY) {
     continue;
   }
 
-  if (live.enc === 'cc') {
-    RX.set(keyOf(live.status, live.ctrl), { field });
-  } else if (live.enc === 'cc14') {
-    RX.set(keyOf(live.msbStatus, live.ctrl), { field, part: 'msb' });
-    RX.set(keyOf(live.lsbStatus, live.ctrl), { field, part: 'lsb' });
+  switch (live.enc) {
+    case 'cc':
+      RX.set(keyOf(live.status, live.ctrl), { field });
+      break;
+    case 'cc14':
+      RX.set(keyOf(live.msbStatus, live.ctrl), { field, part: 'msb' });
+      RX.set(keyOf(live.lsbStatus, live.ctrl), { field, part: 'lsb' });
+      break;
+    default:
+      assertNever(live);
   }
 }
 
@@ -59,18 +64,19 @@ export function encodeField(path: string, value: Value): ShortMessage[] {
   const { live } = field;
   const bytes = (field.type.encode as (v: Value) => number[])(value);
 
-  if (live.enc === 'cc') {
-    const [byte = 0] = bytes;
-    return [{ status: live.status, d1: live.ctrl, d2: byte }];
+  switch (live.enc) {
+    case 'cc': {
+      const [byte = 0] = bytes;
+      return [{ status: live.status, d1: live.ctrl, d2: byte }];
+    }
+    case 'cc14': {
+      const [msb = 0, lsb = 0] = bytes;
+      return [
+        { status: live.msbStatus, d1: live.ctrl, d2: msb },
+        { status: live.lsbStatus, d1: live.ctrl, d2: lsb },
+      ];
+    }
+    default:
+      return assertNever(live);
   }
-
-  if (live.enc === 'cc14') {
-    const [msb = 0, lsb = 0] = bytes;
-    return [
-      { status: live.msbStatus, d1: live.ctrl, d2: msb },
-      { status: live.lsbStatus, d1: live.ctrl, d2: lsb },
-    ];
-  }
-
-  return [];
 }

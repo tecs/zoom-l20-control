@@ -20,7 +20,8 @@ export class WakeLock implements Lock {
   }
 
   async acquire(): Promise<void> {
-    this.sentinel = (await screenWakeLock()?.request('screen').catch(() => {})) ?? null;
+    const wakeLock = screenWakeLock();
+    this.sentinel = wakeLock ? await wakeLock.request('screen').catch(() => null) : null;
   }
 
   async release(): Promise<void> {

@@ -13,7 +13,7 @@ const rank = (level: LogLevel): number => LOG_LEVELS.indexOf(level);
 
 export function LogPane(props: LogPaneProps) {
   const { log } = useApp();
-  let list!: HTMLDivElement;
+  let list: HTMLDivElement | undefined;
 
   const [minLevel, setMinLevel] = createSignal<LogLevel>('debug');
   const [kinds, setKinds] = createSignal<Set<LogKind>>(new Set(LOG_KINDS));

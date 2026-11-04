@@ -40,6 +40,10 @@ export default [
       'class-methods-use-this': 'error',
       'dot-notation': 'off',
       '@typescript-eslint/dot-notation': 'error',
+      '@typescript-eslint/no-unnecessary-condition': [
+        'error',
+        { allowConstantLoopConditions: 'only-allowed-literals' },
+      ],
       eqeqeq: 'error',
       'import-x/extensions': ['error', 'ignorePackages', { ts: 'always', tsx: 'always', js: 'always', jsx: 'always' }],
       'no-console': 'warn',
