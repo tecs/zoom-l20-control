@@ -6,8 +6,22 @@ export abstract class Publisher<Event extends EventType> {
   private subscribers = new Set<Subscriber<Event>>();
 
   protected emit(...event: Event) {
+    const errors: unknown[] = [];
+
     for (const subscriber of this.subscribers) {
-      subscriber(...event);
+      try {
+        subscriber(...event);
+      } catch (error) {
+        errors.push(error);
+      }
+    }
+
+    if (errors.length === 1) {
+      throw errors[0];
+    }
+
+    if (errors.length > 1) {
+      throw new AggregateError(errors, 'Several subscribers threw');
     }
   }
 

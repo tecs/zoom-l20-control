@@ -80,6 +80,38 @@ describe('Publisher', () => {
     );
   });
 
+  it('notifies every subscriber even when one throws', () => {
+    const publisher = new DummyPublisher();
+    const error = new Error('boom');
+    const subscriber = mock.fn<(data: string) => void>();
+
+    publisher.subscribe(() => {
+      throw error;
+    });
+    publisher.subscribe(subscriber);
+
+    assert.throws(() => publisher.fire('foo'), error);
+    assert.strictEqual(subscriber.mock.callCount(), 1);
+  });
+
+  it('throws an AggregateError when several subscribers throw', () => {
+    const publisher = new DummyPublisher();
+    const error1 = new Error('one');
+    const error2 = new Error('two');
+
+    publisher.subscribe(() => {
+      throw error1;
+    });
+    publisher.subscribe(() => {
+      throw error2;
+    });
+
+    assert.throws(
+      () => publisher.fire('foo'),
+      (thrown) => thrown instanceof AggregateError && thrown.errors[0] === error1 && thrown.errors[1] === error2,
+    );
+  });
+
   it('tolerates unsubscribing twice, or a subscriber that was never added', () => {
     const publisher = new DummyPublisher();
     const subscriber = mock.fn<(data: string) => void>();
