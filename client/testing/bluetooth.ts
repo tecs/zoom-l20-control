@@ -13,7 +13,7 @@ type FakeCharacteristic = {
 
 type FakeGatt = {
   connected: boolean;
-  connect(): Promise<{
+  connect: () => Promise<{
     getPrimaryService(): Promise<{
       getCharacteristic(): Promise<FakeCharacteristic>;
     }>;
@@ -23,8 +23,11 @@ type FakeGatt = {
 
 type FakeDevice = {
   id: string;
+  name: string;
   gatt: FakeGatt;
   addEventListener(type: string, listener: () => void): void;
+  removeEventListener(type: string, listener: () => void): void;
+  watchAdvertisements?: () => Promise<void>;
 };
 
 export type FakeBluetooth = {
@@ -32,8 +35,15 @@ export type FakeBluetooth = {
   device: FakeDevice;
   gatt: FakeGatt;
   storage: ReturnType<typeof createMockStorage>;
+  knownDevices: FakeDevice[];
+  /** Fires `advertisementreceived` on the device (it came into range) */
+  advertise: () => void;
   /** Makes the device chooser reject with `error` (dismissed, nothing found, ...) */
   failChooser: (error: Error) => void;
+  /** Removes `navigator.bluetooth` (wrong browser, insecure context, API switched off) */
+  removeApi: () => void;
+  /** Makes `getAvailability()` report no adapter (Bluetooth off or missing) */
+  turnAdapterOff: () => void;
   restore(): void;
 };
 
@@ -74,15 +84,27 @@ export const mockBluetooth = (): FakeBluetooth => {
     },
   };
   const disconnectListeners: (() => void)[] = [];
+  const advertisementListeners = new Set<() => void>();
   const device: FakeDevice = {
     id: 'fake-l20',
+    name: 'L-20',
     gatt,
     addEventListener: (type, listener) => {
       if (type === 'gattserverdisconnected') {
         disconnectListeners.push(listener);
       }
+      if (type === 'advertisementreceived') {
+        advertisementListeners.add(listener);
+      }
     },
+    removeEventListener: (type, listener) => {
+      if (type === 'advertisementreceived') {
+        advertisementListeners.delete(listener);
+      }
+    },
+    watchAdvertisements: async () => {},
   };
+  const knownDevices = [device];
   const original = Object.getOwnPropertyDescriptor(globalThis, 'navigator');
   const originalStorage = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
   const storage = createMockStorage();
@@ -90,10 +112,13 @@ export const mockBluetooth = (): FakeBluetooth => {
   const bluetooth = {
     requestDevice: async (): Promise<FakeDevice> => device,
     getAvailability: async () => true,
+    getDevices: async () => knownDevices,
   };
 
+  const fakeNavigator: { bluetooth?: typeof bluetooth } = { bluetooth };
+
   Object.defineProperty(globalThis, 'navigator', {
-    value: { bluetooth },
+    value: fakeNavigator,
     configurable: true,
     writable: true,
   });
@@ -104,10 +129,18 @@ export const mockBluetooth = (): FakeBluetooth => {
     device,
     gatt,
     storage,
+    knownDevices,
+    advertise: () => [...advertisementListeners].forEach((listener) => listener()),
     failChooser: (error) => {
       bluetooth.requestDevice = async () => {
         throw error;
       };
+    },
+    removeApi: () => {
+      delete fakeNavigator.bluetooth;
+    },
+    turnAdapterOff: () => {
+      bluetooth.getAvailability = async () => false;
     },
     restore() {
       if (original) {

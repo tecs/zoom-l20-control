@@ -247,8 +247,8 @@ export class BluetoothTransport implements Transport {
   }
 
   private async directConnect(device: BluetoothDevice, timeout: number): Promise<boolean> {
-    const deadline = performance.now() + timeout;
-    while (performance.now() < deadline) {
+    const deadline = Date.now() + timeout;
+    while (Date.now() < deadline) {
       if (this.characteristic) {
         return true;
       }

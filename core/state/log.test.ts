@@ -1,6 +1,6 @@
-import { describe, it } from 'node:test';
+import { describe, it, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { Log, type LogEntry } from './log.ts';
+import { Log, logKindForPath, type LogEntry, type LogKind } from './log.ts';
 
 describe('Log', () => {
   it('never evicts errors on a flood of debug entries', () => {
@@ -65,4 +65,44 @@ describe('Log', () => {
       assert.deepEqual(seen, [null]);
     });
   });
+});
+
+describe('logKindForPath()', () => {
+  const cases: [path: string, kind: LogKind][] = [
+    ['strips.0.mute', 'mute'],
+    ['fx.0.mute', 'mute'],
+    ['master.mute', 'mute'],
+    ['strips.0.solo', 'solo'],
+    ['fx.1.solo', 'solo'],
+    ['strips.0.pan', 'pan'],
+    ['strips.0.fx1Send', 'fx'],
+    ['strips.17.fx2Send', 'fx'],
+    ['strips.0.sends.0', 'fader'],
+    ['strips.0.sends.6', 'fader'],
+    ['fx.0.sends.0', 'fader'],
+    ['master.level', 'fader'],
+    ['monitors.5.level', 'fader'],
+    ['strips.0.eqOff', 'eq'],
+    ['strips.0.eqHi', 'eq'],
+    ['strips.0.eqMidF', 'eq'],
+    ['strips.0.lowCut', 'eq'],
+    ['geq.on', 'eq'],
+    ['geq.bands.14', 'eq'],
+    ['fx.0.effect', 'fx'],
+    ['fx.0.tone', 'fx'],
+    ['fx.1.decay', 'fx'],
+    ['strips.0.name', 'misc'],
+    ['strips.0.rec', 'misc'],
+    ['strips.0.phase', 'misc'],
+    ['master.rec', 'misc'],
+    ['tempo', 'misc'],
+    ['sceneDirty', 'misc'],
+    ['recorder.playhead', 'misc'],
+  ];
+
+  for (const [path, kind] of cases) {
+    test(`${path} -> ${kind}`, () => {
+      assert.equal(logKindForPath(path), kind);
+    });
+  }
 });

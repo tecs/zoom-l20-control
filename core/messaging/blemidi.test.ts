@@ -2,6 +2,8 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { BleMidiDecoder, encodeShortMessage, encodeSysEx, type MidiMessage } from './blemidi.ts';
 
+const header = [0xf0, 0x52, 0x00, 0x00, 0x2a];
+
 function assertMessage(message: MidiMessage | undefined, value: number[]): asserts message is MidiMessage {
   assert.ok(message, 'should decode');
   assert.deepEqual([...message.bytes], value);
@@ -46,6 +48,28 @@ describe('BLE-MIDI', () => {
         .flatMap((packet) => decoder.decodePacket(packet))
         .find(({ type }) => type === 'sysex');
       assertMessage(message, long);
+    });
+
+    it('keeps the closing F7 in the packet when its timestamp still fits', () => {
+      const sysEx = [...header, ...new Array<number>(11).fill(0x11), 0xf7];
+      const packets = encodeSysEx(sysEx).map((packet) => [...packet]);
+      assert.deepEqual(packets, [[0x80, 0x80, ...sysEx.slice(0, -1), 0x80, 0xf7]]);
+      assert.equal(packets[0]?.length, 20);
+    });
+
+    it('moves the closing F7 to a packet of its own when its timestamp does not fit', () => {
+      const sysEx = [...header, ...new Array<number>(12).fill(0x11), 0xf7];
+      const packets = encodeSysEx(sysEx).map((packet) => [...packet]);
+      assert.deepEqual(packets, [
+        [0x80, 0x80, ...sysEx.slice(0, -1)],
+        [0x80, 0x80, 0xf7],
+      ]);
+
+      const decoder = new BleMidiDecoder();
+      const message = encodeSysEx(sysEx)
+        .flatMap((packet) => decoder.decodePacket(packet))
+        .find(({ type }) => type === 'sysex');
+      assertMessage(message, sysEx);
     });
   });
 });

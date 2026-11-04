@@ -1,7 +1,11 @@
-import { afterEach, beforeEach, describe } from 'node:test';
+import { afterEach, beforeEach, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { BluetoothTransport, TRANSPORT_STATUS, type TransportStatus } from './transport.ts';
 import { domError, withFakeBluetoothIt } from '../testing/bluetooth.ts';
+import { advance } from '../testing/async.ts';
+
+const outOfRange = (): Promise<never> =>
+  Promise.reject(domError('NetworkError', 'Bluetooth Device is no longer in range.'));
 
 describe('BluetoothTransport', () => {
   let transport: BluetoothTransport;
@@ -105,6 +109,24 @@ describe('BluetoothTransport', () => {
   });
 
   describe('connect()', () => {
+    withFakeBluetoothIt('rejects with a hint, never connecting, without Web Bluetooth', async ({ removeApi }) => {
+      const seen: TransportStatus[] = [];
+      transport.onStatus((status) => seen.push(status));
+      removeApi();
+
+      await assert.rejects(transport.connect(), /Web Bluetooth unavailable/);
+      assert.deepEqual(seen, []);
+    });
+
+    withFakeBluetoothIt('rejects with a hint, never connecting, without an adapter', async ({ turnAdapterOff }) => {
+      const seen: TransportStatus[] = [];
+      transport.onStatus((status) => seen.push(status));
+      turnAdapterOff();
+
+      await assert.rejects(transport.connect(), /No Bluetooth adapter available/);
+      assert.deepEqual(seen, []);
+    });
+
     withFakeBluetoothIt('remembers the connected device for the next auto-connect', async ({ storage }) => {
       await transport.connect();
       assert.equal(storage.getItem('zoom-l20-control.lastDeviceId'), 'fake-l20');
@@ -149,6 +171,81 @@ describe('BluetoothTransport', () => {
 
       await transport.connect();
       assert.equal(seen.at(-1), TRANSPORT_STATUS.CONNECTED);
+    });
+  });
+
+  describe('autoConnect()', () => {
+    beforeEach(() => mock.timers.enable({ apis: ['setTimeout', 'Date'] }));
+    afterEach(() => mock.timers.reset());
+
+    withFakeBluetoothIt('reconnects to the remembered device first', async ({ device, knownDevices, storage }) => {
+      knownDevices.unshift({ ...device, id: 'other-l20' });
+      storage.setItem('zoom-l20-control.lastDeviceId', 'fake-l20');
+
+      assert.equal(await transport.autoConnect(), true);
+      assert.equal(storage.getItem('zoom-l20-control.lastDeviceId'), 'fake-l20');
+    });
+
+    withFakeBluetoothIt('falls back to a device named like an L-20', async ({ device, knownDevices, storage }) => {
+      knownDevices.unshift({ ...device, id: 'headphones', name: 'Headphones' });
+
+      assert.equal(await transport.autoConnect(), true);
+      assert.equal(storage.getItem('zoom-l20-control.lastDeviceId'), 'fake-l20');
+    });
+
+    withFakeBluetoothIt('returns false, never connecting, with no known L-20', async ({ knownDevices }) => {
+      const seen: TransportStatus[] = [];
+      transport.onStatus((status) => seen.push(status));
+      knownDevices.length = 0;
+
+      assert.equal(await transport.autoConnect(), false);
+      assert.deepEqual(seen, []);
+    });
+
+    withFakeBluetoothIt('retries a failed connect until it succeeds', async ({ gatt }) => {
+      const connect = gatt.connect;
+      let attempts = 0;
+      gatt.connect = () => (++attempts < 3 ? outOfRange() : connect());
+
+      const connected = transport.autoConnect();
+      await advance(1000);
+
+      assert.equal(await connected, true);
+      assert.equal(attempts, 3);
+    });
+
+    withFakeBluetoothIt('connects on the next advertisement after the retries run out', async ({ gatt, advertise }) => {
+      const connect = gatt.connect;
+      gatt.connect = outOfRange;
+
+      const connected = transport.autoConnect();
+      await advance(4000);
+      gatt.connect = connect;
+      advertise();
+
+      assert.equal(await connected, true);
+    });
+
+    withFakeBluetoothIt('gives up, disconnected, when no advertisement comes', async ({ gatt }) => {
+      const seen: TransportStatus[] = [];
+      transport.onStatus((status) => seen.push(status));
+      gatt.connect = outOfRange;
+
+      const connected = transport.autoConnect();
+      await advance(20000); // 3 s of retries, ending in a 400 ms pause, then 15 s of waiting
+
+      assert.equal(await connected, false);
+      assert.deepEqual(seen, [TRANSPORT_STATUS.CONNECTING, TRANSPORT_STATUS.DISCONNECTED]);
+    });
+
+    withFakeBluetoothIt('gives up after the retries when the browser cannot watch advertisements', async (fake) => {
+      delete fake.device.watchAdvertisements;
+      fake.gatt.connect = outOfRange;
+
+      const connected = transport.autoConnect();
+      await advance(4000);
+
+      assert.equal(await connected, false);
     });
   });
 
