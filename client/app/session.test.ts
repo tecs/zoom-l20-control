@@ -160,6 +160,20 @@ describe('Session', () => {
         ['connect failed: Bluetooth adapter not available.'],
       );
     });
+
+    it('logs a connect failure that is not an Error', async () => {
+      const { session, transport, log } = setup();
+      const reason: unknown = undefined;
+      transport.connect.mock.mockImplementationOnce(async () => {
+        throw reason;
+      });
+      session.toggleConnection();
+      await flush();
+      assert.deepEqual(
+        log.entries('error').map(({ text }) => text),
+        ['connect failed: undefined'],
+      );
+    });
   });
 
   describe('reread()', () => {

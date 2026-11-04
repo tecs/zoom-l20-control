@@ -12,6 +12,7 @@ import type { ShortMessage } from '../../core/protocol/midi.ts';
 import { sleep } from './timers.ts';
 import { bluetooth, watchAdvertisements } from './browser.ts';
 import { Coalescer } from '../../lib/coalescer.ts';
+import { describeError } from '../../lib/errors.ts';
 
 const DEVICE_NAME_PREFIX = 'L-20';
 const LAST_DEVICE_KEY = 'zoom-l20-control.lastDeviceId';
@@ -44,6 +45,10 @@ const HINT_BLUETOOTH_NOT_AVAILABLE = 'Web Bluetooth unavailable.';
 const HINT_ADAPTER_NOT_FOUND = 'No Bluetooth adapter available. Turn Bluetooth on, then retry.';
 const HINT_DEVICE_NOT_FOUND =
   'Check if Bluetooth is on, the mixer is powered with the BTA-1 seated, and no other device is already connected to it.';
+
+// Bluefy rejects a dismissed chooser with a `2`...
+const isBluefyDismissal = (error: unknown): boolean => String(error) === '2';
+const CHOOSER_DISMISSED = new Error('chooser dismissed');
 
 export class BluetoothTransport implements Transport {
   private errorHandler: ErrorHandler = null;
@@ -92,10 +97,14 @@ export class BluetoothTransport implements Transport {
 
     this.setStatus(TRANSPORT_STATUS.CONNECTING);
     try {
-      const device = await webBluetooth.requestDevice({
-        filters: [{ namePrefix: DEVICE_NAME_PREFIX }],
-        optionalServices: [BLE_MIDI_SERVICE_UUID],
-      });
+      const device = await webBluetooth
+        .requestDevice({
+          filters: [{ namePrefix: DEVICE_NAME_PREFIX }],
+          optionalServices: [BLE_MIDI_SERVICE_UUID],
+        })
+        .catch((error: unknown) => {
+          throw isBluefyDismissal(error) ? CHOOSER_DISMISSED : error;
+        });
       await this.attach(device);
     } catch (error) {
       // Another attempt managed to connect first, ignore the error
@@ -105,6 +114,9 @@ export class BluetoothTransport implements Transport {
       }
       this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
 
+      if (error === CHOOSER_DISMISSED) {
+        return;
+      }
       if (error instanceof Error && error.name === 'NotFoundError') {
         // A dismissed chooser
         if (/cancel/i.test(error.message)) {
@@ -173,8 +185,7 @@ export class BluetoothTransport implements Transport {
   }
 
   private reportWriteError(error: unknown): void {
-    const message = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    this.writeErrors.push(message);
+    this.writeErrors.push(describeError(error));
     if (error instanceof Error && error.name === 'NetworkError') {
       this.disconnect();
     }

@@ -141,6 +141,29 @@ describe('BluetoothTransport', () => {
       assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
     });
 
+    for (const reason of [2, '2']) {
+      withFakeBluetoothIt(
+        `resolves quietly and disconnected when Bluefy's chooser is dismissed (${typeof reason})`,
+        async ({ failChooser }) => {
+          const seen: TransportStatus[] = [];
+          transport.onStatus((status) => seen.push(status));
+          failChooser(reason);
+
+          await transport.connect();
+          assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
+        },
+      );
+    }
+
+    withFakeBluetoothIt("rejects on Bluefy's dismissal code when it comes from GATT", async ({ gatt }) => {
+      const reason: unknown = 2;
+      gatt.connect = async () => {
+        throw reason;
+      };
+
+      await assert.rejects(transport.connect(), (error) => error === 2);
+    });
+
     withFakeBluetoothIt('rejects with the setup hint when the chooser finds nothing', async ({ failChooser }) => {
       const original = domError('NotFoundError', 'Bluetooth adapter not available.');
       failChooser(original);

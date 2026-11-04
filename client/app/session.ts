@@ -1,6 +1,7 @@
 // Link between the transport and the core state
 
 import { Publisher } from '../../lib/publisher.ts';
+import { describeError } from '../../lib/errors.ts';
 import { HANDSHAKE, DUMP_REQUEST, meterSelect } from '../../core/protocol/session.ts';
 import { scenePress, isSceneOnEcho } from '../../core/protocol/scenes.ts';
 import { parseTransport } from '../../core/protocol/transport.ts';
@@ -82,7 +83,9 @@ export class Session extends Publisher<[status: TransportStatus]> {
       return;
     }
 
-    this.transport.connect().catch(({ message }) => this.log.error(`connect failed: ${message}`, 'status'));
+    this.transport
+      .connect()
+      .catch((error: unknown) => this.log.error(`connect failed: ${describeError(error)}`, 'status'));
   }
 
   reread(): void {

@@ -39,7 +39,7 @@ export type FakeBluetooth = {
   /** Fires `advertisementreceived` on the device (it came into range) */
   advertise: () => void;
   /** Makes the device chooser reject with `error` (dismissed, nothing found, ...) */
-  failChooser: (error: Error) => void;
+  failChooser: (error: unknown) => void;
   /** Removes `navigator.bluetooth` (wrong browser, insecure context, API switched off) */
   removeApi: () => void;
   /** Makes `getAvailability()` report no adapter (Bluetooth off or missing) */
