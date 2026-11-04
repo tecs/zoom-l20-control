@@ -64,7 +64,7 @@ export function Geq() {
         </button>
       </div>
       <div class="geq-bands">
-        <For each={bands}>{(rw, n) => <BandSlider path={P.geq.band(n())} label={GEQ_FREQS[n()]} rw={rw} />}</For>
+        <For each={bands}>{(rw, n) => <BandSlider path={P.geq.band(n())} label={GEQ_FREQS[n()] ?? ''} rw={rw} />}</For>
       </div>
     </div>
   );

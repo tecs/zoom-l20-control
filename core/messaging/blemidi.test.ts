@@ -2,10 +2,10 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { BleMidiDecoder, encodeShortMessage, encodeSysEx, type MidiMessage } from './blemidi.ts';
 
-const assertMessage = (message: MidiMessage | undefined, value: number[]) => {
+function assertMessage(message: MidiMessage | undefined, value: number[]): asserts message is MidiMessage {
   assert.ok(message, 'should decode');
   assert.deepEqual([...message.bytes], value);
-};
+}
 
 describe('BLE-MIDI', () => {
   describe('BleMidiDecoder', () => {

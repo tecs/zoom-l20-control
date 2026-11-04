@@ -31,7 +31,8 @@ export function ChannelDetail(props: { open: Accessor<number | null>; onClose: (
       return 'Channel';
     }
     const name = names[strip]?.();
-    return name || (LAYOUT.monoStrips.includes(strip) ? `Channel ${STRIP_NAMES[strip]}` : STRIP_NAMES[strip]);
+    const fallback = STRIP_NAMES[strip] ?? String(strip + 1);
+    return name || (LAYOUT.monoStrips.includes(strip) ? `Channel ${fallback}` : fallback);
   };
 
   createEffect(() => {

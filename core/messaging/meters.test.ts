@@ -12,8 +12,8 @@ describe('decodeMeterFrame()', () => {
     assert.equal(result.channels.length, 18);
     assert.equal(result.fx.length, 2);
     assert.deepEqual(result.channels[0], { pre: [0.5], post: [1] });
-    assert.deepEqual(result.channels[16].pre, [0.5, 1]);
-    assert.deepEqual(result.fx[0].pre, [0.25, 0]);
+    assert.deepEqual(result.channels[16]?.pre, [0.5, 1]);
+    assert.deepEqual(result.fx[0]?.pre, [0.25, 0]);
   });
 
   it('decodes the master output meter from the trailing L/R pair', () => {
@@ -23,7 +23,7 @@ describe('decodeMeterFrame()', () => {
 
   it('clamps over-full-scale to 1', () => {
     const result = decodeMeterFrame(meterFrame(0, [200], []))!;
-    assert.equal(result.channels[0].pre[0], 1);
+    assert.equal(result.channels[0]?.pre[0], 1);
   });
 
   it('rejects non-meter frames', () => {

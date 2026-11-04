@@ -19,8 +19,8 @@ type ChannelStripProps = {
 };
 
 export function ChannelStrip(props: ChannelStripProps) {
-  const value = (): number => props.bindings.sends[props.mix()][0]() ?? 0;
-  const setValue = (val: number): void => props.bindings.sends[props.mix()][1](val);
+  const value = (): number => props.bindings.sends[props.mix()]?.[0]() ?? 0;
+  const setValue = (val: number): void => props.bindings.sends[props.mix()]?.[1](val);
   const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
   const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));
 

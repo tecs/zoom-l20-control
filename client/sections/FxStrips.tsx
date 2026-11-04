@@ -1,6 +1,6 @@
 import { For, createEffect, type Accessor } from 'solid-js';
 import { LAYOUT, rangeOf } from '../../core/protocol/registry.ts';
-import { FX_RANGES, FX_KNOB_LABELS, FX_DISPLAY, FX_DESCRIPTIONS } from '../../core/protocol/fxeffects.ts';
+import { FX_DESCRIPTIONS, fxKnob, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
 import { FX_NAMES } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { meterFrame } from '../bridge.ts';
@@ -45,8 +45,8 @@ type FxDetailProps = {
 };
 
 function FxStrip(props: FxStripProps) {
-  const setValue = (value: number): void => props.bindings.sends[props.mix()][1](value);
-  const value = (): number => props.bindings.sends[props.mix()][0]() ?? 0;
+  const setValue = (value: number): void => props.bindings.sends[props.mix()]?.[1](value);
+  const value = (): number => props.bindings.sends[props.mix()]?.[0]() ?? 0;
   const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
   // Per-mix, so a monitor send with a different range would just work
   const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));
@@ -102,23 +102,21 @@ export function FxStrips(props: FxStripsProps) {
 }
 
 function FxKnob(props: FxKnobProps) {
-  // Nothing is read off props before first render
-  const index = (): number => (props.knob === 'tone' ? 0 : 1);
   const getValue = (): number | undefined => props.rw[0]();
   const setValue = (value: number): void => props.rw[1](value);
 
   // These are driven by local props rather than desk echo, so that feedback is instant.
-  const getMin = (): number => FX_RANGES[props.index][props.effect()][index() * 2];
-  const getMax = (): number => FX_RANGES[props.index][props.effect()][index() * 2 + 1];
-  const label = (): string => FX_KNOB_LABELS[props.index][props.effect()][index()];
+  const spec = (): FxKnobSpec => fxKnob(props.index, props.effect(), props.knob);
+  const getMin = (): number => spec().wire[0];
+  const getMax = (): number => spec().wire[1];
+  const label = (): string => spec().label;
 
   const readout = (): string => {
     const value = getValue();
     if (value === undefined) {
       return '';
     }
-    const displayMin = FX_DISPLAY[props.index][props.effect()][index() * 2];
-    const displayMax = FX_DISPLAY[props.index][props.effect()][index() * 2 + 1];
+    const [displayMin, displayMax] = spec().display;
     const unit = label() === 'Time' ? ' ms' : '';
     const min = getMin();
     const shown = displayMin + ((value - min) * (displayMax - displayMin)) / (getMax() - min);
@@ -145,7 +143,7 @@ function FxKnob(props: FxKnobProps) {
 function FxPanel(props: FxPanelProps) {
   const effect = (): number => props.bindings.effect[0]() ?? 0;
   const setEffect = (value: number): void => props.bindings.effect[1](value);
-  const description = (): string => FX_DESCRIPTIONS[props.index][effect()];
+  const description = (): string => FX_DESCRIPTIONS[props.index]?.[effect()] ?? '';
 
   return (
     <div class="detail-panel" hidden={props.open() !== props.index}>
@@ -183,7 +181,7 @@ export function FxDetail(props: FxDetailProps) {
 
   const title = (): string => {
     const index = props.open();
-    return index === null ? 'FX' : FX_NAMES[index];
+    return index === null ? 'FX' : (FX_NAMES[index] ?? 'FX');
   };
 
   return (

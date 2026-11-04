@@ -58,7 +58,7 @@ export const bool = (onValue = 1): BoolValueType => ({
   len: 1,
   kind: 'bool',
   onValue,
-  decode: ([byte]) => byte !== 0,
+  decode: ([byte = 0]) => byte !== 0,
   encode: (value) => [value ? onValue : 0],
 });
 
@@ -68,7 +68,7 @@ export const scalar = ({ min = 0, max = U7_MAX, center }: Range & { center?: num
   min,
   max,
   center,
-  decode: ([byte]) => byte,
+  decode: ([byte = 0]) => byte,
   encode: (value) => [(value | 0) & U7_MAX],
 });
 
@@ -76,8 +76,8 @@ export const enumOf = (labels: string[]): EnumValueType => ({
   len: 1,
   kind: 'enum',
   labels,
-  label: (index) => labels[index],
-  decode: ([byte]) => (byte < labels.length ? byte : 0),
+  label: (index) => labels[index] ?? String(index),
+  decode: ([byte = 0]) => (byte < labels.length ? byte : 0),
   encode: (value) => [(value | 0) & U7_MAX],
 });
 
@@ -86,7 +86,7 @@ export const u14 = ({ min = 0, max = U14_MAX }: Range = {}): U14ValueType => ({
   kind: 'u14',
   min,
   max,
-  decode: ([msb, lsb]) => (msb << 7) | lsb,
+  decode: ([msb = 0, lsb = 0]) => (msb << 7) | lsb,
   encode: (value) => {
     const x = (value | 0) & U14_MAX;
     return [(x >> 7) & U7_MAX, x & U7_MAX]; // msb, lsb
@@ -112,7 +112,7 @@ export const str = (length: number): StringValueType => ({
 export const hms = (): HmsValueType => ({
   len: 4,
   kind: 'hms',
-  decode: ([hMsb, hLsb, m, s]) => (((hMsb << 7) | hLsb) * 60 + m) * 60 + s,
+  decode: ([hMsb = 0, hLsb = 0, m = 0, s = 0]) => (((hMsb << 7) | hLsb) * 60 + m) * 60 + s,
   encode: (value) => {
     const time = value | 0,
       s = time % 60,

@@ -46,7 +46,7 @@ export class BleMidiDecoder {
     }
 
     // Discard stray data bytes
-    while (this.bytes.length > 0 && !isStatus(this.bytes[0])) {
+    while (this.bytes[0] !== undefined && !isStatus(this.bytes[0])) {
       this.bytes.shift();
     }
 

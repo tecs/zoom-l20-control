@@ -8,7 +8,7 @@ export const setPath = (obj: State, path: string, value: unknown): void =>
     if (i === segments.length - 1) {
       return void (obj[segment] = value);
     }
-    obj = (obj[segment] ??= /^\d+$/.test(segments[i + 1]) ? [] : {}) as State;
+    obj = (obj[segment] ??= /^\d+$/.test(segments[i + 1] ?? '') ? [] : {}) as State;
   });
 
 export const getPath = (obj: State, path: string): unknown =>
@@ -42,9 +42,7 @@ export function serializeDump(state: State, base: Uint8Array | number[]): Uint8A
     }
 
     const encoded = (type.encode as (value: Value) => number[])(value as Value);
-    for (let i = 0; i < encoded.length; i++) {
-      out[dump + i] = encoded[i];
-    }
+    out.set(encoded, dump);
   }
 
   return out;

@@ -80,7 +80,7 @@ type RecState = {
   next: number;
 };
 
-const REC_STATES: RecState[] = [
+const REC_STATES: readonly [RecState, RecState, RecState] = [
   { text: 'Rec', class: '', next: 2 },
   { text: 'PLAY', class: 'play', next: 0 },
   { text: 'REC', class: 'rec', next: 1 },

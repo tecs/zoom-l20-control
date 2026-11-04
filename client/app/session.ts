@@ -148,7 +148,8 @@ export class Session extends Publisher<[status: TransportStatus]> {
   }
 
   private handleMidi(bytes: Uint8Array): void {
-    const message: ShortMessage = { status: bytes[0], d1: bytes[1], d2: bytes[2] };
+    const [status = 0, d1 = 0, d2 = 0] = bytes;
+    const message: ShortMessage = { status, d1, d2 };
     if (isSceneOnEcho(message)) {
       return this.sceneState.setOn(message.d2 !== 0);
     }
@@ -182,7 +183,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
       return void this.transport.sendSysEx(DUMP_REQUEST);
     }
     if (command === 0x32) {
-      return this.sceneState.setActive(bytes[7]);
+      return this.sceneState.setActive(bytes[7] ?? null);
     }
 
     this.unhandledSysex(bytes);

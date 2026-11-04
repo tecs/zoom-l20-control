@@ -123,6 +123,33 @@ export const fxKnobDefault = (fxIndex: number, effectIndex: number, knob: 'tone'
   if (!range) {
     return null;
   }
-  const knobIndex = knob === 'tone' ? 0 : 1;
-  return Math.round((range[knobIndex * 2] + range[knobIndex * 2 + 1]) / 2);
+  const [toneMin, toneMax, decayMin, decayMax] = range;
+  return knob === 'tone' ? Math.round((toneMin + toneMax) / 2) : Math.round((decayMin + decayMax) / 2);
+};
+
+export interface FxKnobSpec {
+  label: string;
+  wire: readonly [min: number, max: number];
+  display: readonly [min: number, max: number];
+}
+
+const DEFAULT_KNOBS: Record<'tone' | 'decay', FxKnobSpec> = {
+  tone: { label: 'Tone', wire: [0, 100], display: [0, 100] },
+  decay: { label: 'Decay', wire: [0, 100], display: [0, 100] },
+};
+
+export const fxKnob = (fxIndex: number, effectIndex: number, knob: 'tone' | 'decay'): FxKnobSpec => {
+  const wire = FX_RANGES[fxIndex]?.[effectIndex];
+  const display = FX_DISPLAY[fxIndex]?.[effectIndex];
+  const labels = FX_KNOB_LABELS[fxIndex]?.[effectIndex];
+  if (!wire || !display || !labels) {
+    return DEFAULT_KNOBS[knob];
+  }
+
+  const [toneMin, toneMax, decayMin, decayMax] = wire;
+  const [toneShownMin, toneShownMax, decayShownMin, decayShownMax] = display;
+  const [toneLabel, decayLabel] = labels;
+  return knob === 'tone'
+    ? { label: toneLabel, wire: [toneMin, toneMax], display: [toneShownMin, toneShownMax] }
+    : { label: decayLabel, wire: [decayMin, decayMax], display: [decayShownMin, decayShownMax] };
 };

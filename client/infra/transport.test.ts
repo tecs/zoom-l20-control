@@ -31,7 +31,7 @@ describe('BluetoothTransport', () => {
 
     await transport.sendMessage({ status: 0xb0, d1: 0x3c, d2: 100 });
     assert.equal(errors.length, 1);
-    assert.match(errors[0], /write failed - NetworkError: Authentication canceled\./);
+    assert.match(errors[0] ?? '', /write failed - NetworkError: Authentication canceled\./);
   });
 
   withFakeBluetoothIt('settles the status to disconnected on a NetworkError', async ({ characteristic }) => {

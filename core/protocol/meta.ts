@@ -58,16 +58,26 @@ export const linearDistribution = (rawMin: number, rawMax: number, min: number, 
  * The first point may be infinite, in which case the second point must be exactly one raw value more than the first.
  */
 export const tableDistribution = (points: [number, number][]): Distribution => {
-  if (points.length < 2) {
+  const [first, second] = points;
+  const last = points.at(-1);
+  if (!first || !second || !last) {
     throw new Error('Table distributions must contain at least two points');
   }
-  if (points.slice(1).some(([raw, domain], i) => points[i][0] >= raw || points[i][1] >= domain)) {
+
+  // Each point paired with the one before it
+  const segments: [from: [number, number], to: [number, number]][] = [];
+  let previous = first;
+  for (const point of points.slice(1)) {
+    segments.push([previous, point]);
+    previous = point;
+  }
+  if (segments.some(([[rawFrom, domainFrom], [rawTo, domainTo]]) => rawFrom >= rawTo || domainFrom >= domainTo)) {
     throw new Error('Points must be sorted ascending');
   }
 
-  const [rawMin, min] = points[0];
-  const [rawMax, max] = points[points.length - 1];
-  if (!Number.isFinite(min) && points[1][0] !== rawMin + 1) {
+  const [rawMin, min] = first;
+  const [rawMax, max] = last;
+  if (!Number.isFinite(min) && second[0] !== rawMin + 1) {
     throw new Error(
       'The raw value of the second point must be one more than the first one, when the first domain value is -inf',
     );
@@ -78,17 +88,17 @@ export const tableDistribution = (points: [number, number][]): Distribution => {
     domain: { min, max },
     points,
     toDomain: (rawValue: number): number => {
-      for (let i = 1; i < points.length; i++) {
-        if (rawValue <= points[i][0]) {
-          return rescale(rawValue, points[i - 1][0], points[i][0], points[i - 1][1], points[i][1]);
+      for (const [[rawFrom, domainFrom], [rawTo, domainTo]] of segments) {
+        if (rawValue <= rawTo) {
+          return rescale(rawValue, rawFrom, rawTo, domainFrom, domainTo);
         }
       }
       return max;
     },
     toRaw: (domainValue: number): number => {
-      for (let i = 1; i < points.length; i++) {
-        if (domainValue <= points[i][1]) {
-          return Math.round(rescale(domainValue, points[i - 1][1], points[i][1], points[i - 1][0], points[i][0]));
+      for (const [[rawFrom, domainFrom], [rawTo, domainTo]] of segments) {
+        if (domainValue <= domainTo) {
+          return Math.round(rescale(domainValue, domainFrom, domainTo, rawFrom, rawTo));
         }
       }
       return rawMax;
@@ -310,6 +320,6 @@ export function familyRawReadout(store: MetaStore, family: string): ReadoutSampl
 export const calibrationReadout = (store: MetaStore): CalibrationReadout[] =>
   PROVISIONAL_FAMILIES.map((family) => ({
     family,
-    unit: FAMILIES[family].unit,
+    unit: FAMILIES[family]?.unit,
     samples: familyRawReadout(store, family),
   }));

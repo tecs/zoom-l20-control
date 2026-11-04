@@ -35,8 +35,8 @@ describe('Publisher', () => {
 
     assert.strictEqual(subscriber1.mock.callCount(), 1);
     assert.strictEqual(subscriber1.mock.callCount(), subscriber2.mock.callCount());
-    assert.deepEqual(subscriber1.mock.calls[0].arguments, ['foo']);
-    assert.deepEqual(subscriber1.mock.calls[0].arguments, subscriber2.mock.calls[0].arguments);
+    assert.deepEqual(subscriber1.mock.calls[0]?.arguments, ['foo']);
+    assert.deepEqual(subscriber1.mock.calls[0]?.arguments, subscriber2.mock.calls[0]?.arguments);
   });
 
   it('registers the same subscriber once', () => {

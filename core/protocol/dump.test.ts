@@ -13,16 +13,18 @@ describe('Dump', () => {
   });
 
   describe('deserializeDump()', () => {
-    it('returns well-shaped state', { skip: DUMPS.length === 0 }, () => {
-      const state = deserializeDump(DUMPS[0].bytes) as {
+    const [first] = DUMPS;
+    it('returns well-shaped state', { skip: !first }, () => {
+      assert.ok(first);
+      const state = deserializeDump(first.bytes) as {
         strips: { sends: unknown[] }[];
         fx: { tone: number }[];
         geq: { bands: unknown[] };
       };
       assert.equal(state.strips.length, 18);
-      assert.equal(typeof state.fx[1].tone, 'number');
+      assert.equal(typeof state.fx[1]?.tone, 'number');
       assert.equal(state.geq.bands.length, 15);
-      assert.equal(state.strips[0].sends.length, 7);
+      assert.equal(state.strips[0]?.sends.length, 7);
     });
   });
 });

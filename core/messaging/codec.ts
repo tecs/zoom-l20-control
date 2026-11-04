@@ -60,13 +60,15 @@ export function encodeField(path: string, value: Value): ShortMessage[] {
   const bytes = (field.type.encode as (v: Value) => number[])(value);
 
   if (live.enc === 'cc') {
-    return [{ status: live.status, d1: live.ctrl, d2: bytes[0] }];
+    const [byte = 0] = bytes;
+    return [{ status: live.status, d1: live.ctrl, d2: byte }];
   }
 
   if (live.enc === 'cc14') {
+    const [msb = 0, lsb = 0] = bytes;
     return [
-      { status: live.msbStatus, d1: live.ctrl, d2: bytes[0] },
-      { status: live.lsbStatus, d1: live.ctrl, d2: bytes[1] },
+      { status: live.msbStatus, d1: live.ctrl, d2: msb },
+      { status: live.lsbStatus, d1: live.ctrl, d2: lsb },
     ];
   }
 
