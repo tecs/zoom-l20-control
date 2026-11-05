@@ -4,7 +4,6 @@ import { GEQ_FREQS, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
-import { sleep } from '../infra/timers.ts';
 
 type BandSliderProps = {
   path: string;
@@ -44,11 +43,9 @@ function BandSlider(props: BandSliderProps) {
 export function Geq() {
   const { store } = useApp();
   const bands = LAYOUT.geqBands.map((n) => fieldRW<number>(store, P.geq.band(n)));
-  const flat = async (): Promise<void> => {
+  const flat = (): void => {
     for (const [, set] of bands) {
       set(EQ_GAIN_FLAT);
-      // Space out each set(), so the desk doesn't drop commands
-      await sleep(15);
     }
   };
 
@@ -57,7 +54,7 @@ export function Geq() {
       <div class="geq-head">
         <span class="out-title">Graphic EQ</span>
         <OnToggle />
-        <button type="button" onClick={() => void flat()}>
+        <button type="button" onClick={flat}>
           Flat
         </button>
       </div>
