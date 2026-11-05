@@ -6,6 +6,7 @@ import { buttonMessage } from './buttons.ts';
 
 // In the button space, though not a button - its value is the mix
 const METER_SELECT_INDEX = 21;
+const DESK_DEVICE = 0x00;
 
 export const DUMP_REQUEST = zoomSysex(COMMAND.DUMP_REQUEST);
 
@@ -18,7 +19,7 @@ export const HANDSHAKE = [
       0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x01, 0x00, 0x00,
     ],
   ),
-  identityRequest(0x00),
+  identityRequest(DESK_DEVICE),
   DUMP_REQUEST,
   zoomSysex(COMMAND.PAGED_REQUEST, 0x00),
   zoomSysex(COMMAND.PAGED_REQUEST, 0x01),

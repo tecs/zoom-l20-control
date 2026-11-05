@@ -8,8 +8,12 @@ export const BLE_MIDI_CHARACTERISTIC_UUID = '7772e5db-3868-4112-a1a9-f2669d106bf
 
 export type MidiMessage = { type: 'midi' | 'sysex'; bytes: Uint8Array };
 
-const headerByte = (ts: number): number => STATUS_BIT | ((ts >> 7) & 0x3f);
-const timestampByte = (ts: number): number => STATUS_BIT | (ts & 0x7f);
+const TIMESTAMP_LOW_BITS = 7;
+const TIMESTAMP_HIGH_MASK = 0x3f;
+const TIMESTAMP_LOW_MASK = 0x7f;
+
+const headerByte = (ts: number): number => STATUS_BIT | ((ts >> TIMESTAMP_LOW_BITS) & TIMESTAMP_HIGH_MASK);
+const timestampByte = (ts: number): number => STATUS_BIT | (ts & TIMESTAMP_LOW_MASK);
 
 export class BleMidiDecoder {
   private bytes: number[] = [];

@@ -21,6 +21,8 @@ import type { MidiMessage } from '../../core/messaging/blemidi.ts';
 import { TRANSPORT_STATUS, type Transport, type TransportStatus } from '../infra/transport.ts';
 import type { Lock } from '../infra/wakelock.ts';
 
+const DECODED_SUBTYPE = 0x00;
+
 export interface SessionDependencies {
   transport: Transport;
   wakeLock: Lock;
@@ -184,10 +186,10 @@ export class Session extends Publisher<[status: TransportStatus]> {
     if (command === COMMAND.EVENT) {
       return this.updateMeters(bytes);
     }
-    if (command === COMMAND.SCENE_RECALL && subtype === 0x00) {
+    if (command === COMMAND.SCENE_RECALL && subtype === DECODED_SUBTYPE) {
       return void this.transport.sendSysEx(DUMP_REQUEST);
     }
-    if (command === COMMAND.SCENE && subtype === 0x00) {
+    if (command === COMMAND.SCENE && subtype === DECODED_SUBTYPE) {
       return this.sceneState.setActive(scene ?? null);
     }
 
