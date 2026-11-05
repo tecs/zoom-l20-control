@@ -19,6 +19,7 @@ export function fakeTransport() {
     autoConnect: mock.fn(async (): Promise<boolean> => true),
     disconnect: mock.fn((): void => {}),
     sendMessage: async (message: ShortMessage): Promise<void> => void sent.push(message),
+    sendValue: async (messages: ShortMessage[]): Promise<void> => void sent.push(...messages),
     sendSysEx: async (bytes: number[]): Promise<void> => void sysex.push(bytes),
     onMessage: (handler: MessageHandler) => void (messageHandler = handler),
     onStatus: (handler: StatusHandler) => void (statusHandler = handler),

@@ -38,11 +38,10 @@ export interface Transport {
   autoConnect(): Promise<boolean>;
   disconnect(): void;
   sendMessage(message: ShortMessage): Promise<void>;
+  sendValue(messages: ShortMessage[]): Promise<void>;
   sendSysEx(bytes: number[]): Promise<void>;
 }
 
-const HINT_BLUETOOTH_NOT_AVAILABLE = 'Web Bluetooth unavailable.';
-const HINT_ADAPTER_NOT_FOUND = 'No Bluetooth adapter available. Turn Bluetooth on, then retry.';
 const HINT_DEVICE_NOT_FOUND =
   'Check if Bluetooth is on, the mixer is powered with the BTA-1 seated, and no other device is already connected to it.';
 
@@ -60,6 +59,9 @@ export class BluetoothTransport implements Transport {
   private decoder: BleMidiDecoder | null = null;
   private characteristic: BluetoothRemoteGATTCharacteristic | null = null;
   private listened = new WeakSet<BluetoothDevice>();
+
+  private queue: Promise<void> = Promise.resolve();
+  private waitingValues = new Map<string, { messages: ShortMessage[]; sent: Promise<void> }>();
 
   private writeErrors = new Coalescer<string>(WRITE_ERROR_WINDOW_MS, (message, repeats) =>
     this.errorHandler?.(`write failed - ${message} ${repeats > 0 ? `(repeated ${repeats} more times)` : ''}`),
@@ -171,13 +173,46 @@ export class BluetoothTransport implements Transport {
     this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
   }
 
-  async sendMessage(message: ShortMessage): Promise<void> {
-    await this.write(encodeShortMessage(message));
+  sendMessage(message: ShortMessage): Promise<void> {
+    return this.enqueue(() => this.writeMessages([message]));
   }
 
-  async sendSysEx(bytes: number[]): Promise<void> {
-    for (const packet of encodeSysEx(bytes)) {
+  sendValue(messages: ShortMessage[]): Promise<void> {
+    const key = messages.map(({ status, d1 }) => (status << 8) | d1).join();
+    const waiting = this.waitingValues.get(key);
+    if (waiting) {
+      waiting.messages = messages;
+      return waiting.sent;
+    }
+
+    const entry = { messages, sent: Promise.resolve() };
+    this.waitingValues.set(key, entry);
+    entry.sent = this.enqueue(() => {
+      this.waitingValues.delete(key);
+      return this.writeMessages(entry.messages);
+    });
+    return entry.sent;
+  }
+
+  sendSysEx(bytes: number[]): Promise<void> {
+    return this.enqueue(() => this.writePackets(encodeSysEx(bytes)));
+  }
+
+  private enqueue(task: () => Promise<void>): Promise<void> {
+    const run = this.queue.then(task);
+    // Keep the queue going even if a task throws
+    this.queue = run.catch(() => undefined);
+    return run;
+  }
+
+  private writeMessages(messages: ShortMessage[]): Promise<void> {
+    return this.writePackets(messages.map((message) => encodeShortMessage(message)));
+  }
+
+  private async writePackets(packets: Uint8Array[]): Promise<void> {
+    for (const packet of packets) {
       const success = await this.write(packet);
+      // Stop at the first failure - the rest of a SysEx would be garbage on its own
       if (!success) {
         return;
       }
@@ -186,7 +221,7 @@ export class BluetoothTransport implements Transport {
 
   private reportWriteError(error: unknown): void {
     this.writeErrors.push(describeError(error));
-    if (error instanceof Error && error.name === 'NetworkError') {
+    if (!this.device?.gatt?.connected) {
       this.disconnect();
     }
   }

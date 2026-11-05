@@ -38,17 +38,33 @@ describe('BluetoothTransport', () => {
     assert.match(errors[0] ?? '', /write failed - NetworkError: Authentication canceled\./);
   });
 
-  withFakeBluetoothIt('settles the status to disconnected on a NetworkError', async ({ characteristic }) => {
+  withFakeBluetoothIt(
+    'settles the status to disconnected when a write finds the link gone',
+    async ({ characteristic, gatt }) => {
+      const seen: TransportStatus[] = [];
+
+      transport.onStatus((status) => seen.push(status));
+
+      await transport.connect();
+      assert.equal(seen.at(-1), TRANSPORT_STATUS.CONNECTED);
+
+      gatt.connected = false;
+      characteristic.fail = () => domError('NetworkError', 'GATT Server is disconnected.');
+      await transport.sendMessage({ status: 0xb0, d1: 0x3c, d2: 100 });
+      assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
+    },
+  );
+
+  withFakeBluetoothIt('stays connected when a write is rejected on a live link', async ({ characteristic }) => {
     const seen: TransportStatus[] = [];
 
     transport.onStatus((status) => seen.push(status));
 
     await transport.connect();
-    assert.equal(seen.at(-1), TRANSPORT_STATUS.CONNECTED);
 
-    characteristic.fail = () => domError('NetworkError', 'Authentication canceled.');
+    characteristic.fail = () => domError('NetworkError', 'GATT operation already in progress.');
     await transport.sendMessage({ status: 0xb0, d1: 0x3c, d2: 100 });
-    assert.equal(seen.at(-1), TRANSPORT_STATUS.DISCONNECTED);
+    assert.equal(seen.at(-1), TRANSPORT_STATUS.CONNECTED);
   });
 
   withFakeBluetoothIt('collapses a burst of identical failures into one report', async ({ characteristic }) => {
@@ -73,6 +89,81 @@ describe('BluetoothTransport', () => {
 
     await transport.sendSysEx([0xf0, 0x52, 0x00, 0x00, 0x2a, 0xf7]);
     assert.equal(characteristic.writes, 1);
+  });
+
+  describe('write queue', () => {
+    // Android rejects overlapping writes
+    const writeLikeAndroid = (characteristic: { writeValueWithoutResponse(packet: BufferSource): Promise<void> }) => {
+      const written: number[][] = [];
+      let busy = false;
+      characteristic.writeValueWithoutResponse = async (packet) => {
+        if (busy) {
+          throw domError('NetworkError', 'GATT operation already in progress.');
+        }
+        busy = true;
+        await new Promise((resolve) => setImmediate(resolve));
+        busy = false;
+        // Drop the BLE-MIDI header and timestamp
+        written.push([...(packet as Uint8Array)].slice(2));
+      };
+      return written;
+    };
+
+    withFakeBluetoothIt('sends overlapping writes one at a time, in order', async ({ characteristic }) => {
+      const errors: string[] = [];
+      transport.onError((message) => errors.push(message));
+      await transport.connect();
+      const written = writeLikeAndroid(characteristic);
+
+      await Promise.all([
+        transport.sendMessage({ status: 0xba, d1: 0x57, d2: 0x03 }),
+        transport.sendValue([
+          { status: 0xb4, d1: 0x4e, d2: 0x00 },
+          { status: 0xb5, d1: 0x4e, d2: 0x34 },
+        ]),
+        transport.sendSysEx([0xf0, 0x52, 0x00, 0x00, 0x2b, 0xf7]),
+      ]);
+
+      assert.deepEqual(errors, []);
+      assert.deepEqual(written, [
+        [0xba, 0x57, 0x03],
+        [0xb4, 0x4e, 0x00],
+        [0xb5, 0x4e, 0x34],
+        [0xf0, 0x52, 0x00, 0x00, 0x2b, 0x80, 0xf7],
+      ]);
+    });
+
+    withFakeBluetoothIt('sends only the latest value of a control still waiting', async ({ characteristic }) => {
+      await transport.connect();
+      const written = writeLikeAndroid(characteristic);
+      const tone = (lsb: number) => [
+        { status: 0xb4, d1: 0x4e, d2: 0x00 },
+        { status: 0xb5, d1: 0x4e, d2: lsb },
+      ];
+
+      const first = transport.sendValue(tone(0x34));
+      await Promise.resolve(); // the first is now being written
+      await Promise.all([first, transport.sendValue(tone(0x41)), transport.sendValue(tone(0x43))]);
+
+      assert.deepEqual(written, [
+        [0xb4, 0x4e, 0x00],
+        [0xb5, 0x4e, 0x34],
+        [0xb4, 0x4e, 0x00],
+        [0xb5, 0x4e, 0x43],
+      ]);
+    });
+
+    withFakeBluetoothIt('never merges two presses of the same button', async ({ characteristic }) => {
+      await transport.connect();
+      const written = writeLikeAndroid(characteristic);
+
+      await Promise.all([
+        transport.sendMessage({ status: 0xba, d1: 0x56, d2: 0x03 }),
+        transport.sendMessage({ status: 0xba, d1: 0x56, d2: 0x03 }),
+      ]);
+
+      assert.equal(written.length, 2);
+    });
   });
 
   describe('onMessage()', () => {

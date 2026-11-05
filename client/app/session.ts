@@ -73,7 +73,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
 
   selectMix(mix: number): void {
     this.selectedMix = mix;
-    void this.transport.sendMessage(meterSelect(mix));
+    void this.transport.sendValue([meterSelect(mix)]);
   }
 
   /** Reconnects to the last mixer, without the chooser */
@@ -110,9 +110,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
   }
 
   private onSend(messages: ShortMessage[]): void {
-    for (const message of messages) {
-      void this.transport.sendMessage(message);
-    }
+    void this.transport.sendValue(messages);
 
     // Decode our own outbound bytes back to a readable path/value
     let last: DecodeResult | null = null;
