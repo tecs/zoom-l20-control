@@ -57,7 +57,7 @@ const GEQ_ON = 15;
 const TEMPO = { MSB: 2, LSB: 3 } as const;
 
 export const FADER_MAX = 0x78;
-const EQ_GAIN_MAX = 0x3c;
+export const EQ_GAIN_MAX = 0x3c;
 export const EQ_GAIN_FLAT = 0x1e; // 0 dB
 const EQ_GAIN = scalar({ max: EQ_GAIN_MAX, center: EQ_GAIN_FLAT });
 

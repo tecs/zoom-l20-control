@@ -1,6 +1,7 @@
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
 import { P, rangeOf } from '../../core/protocol/registry.ts';
 import { formatValue } from '../../core/format.ts';
+import { defaultValue } from '../../core/protocol/meta.ts';
 import { fieldRW, meterFrame } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import { Meter, type Peaks } from '../components/Meter.tsx';
@@ -27,7 +28,7 @@ export function MasterStrip(props: MasterStripProps) {
     }
     return { pre: [current.master.left, current.master.right], post: [] };
   };
-  const value = (): number => level() ?? 0;
+  const value = (): number => level() ?? defaultValue(P.master.level);
 
   return (
     <div class="strip master">

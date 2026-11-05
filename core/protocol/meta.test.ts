@@ -4,6 +4,7 @@ import { REGISTRY } from './registry.ts';
 import {
   META,
   metaFor,
+  defaultValue,
   normalizePath,
   linearDistribution,
   tableDistribution,
@@ -13,6 +14,20 @@ import {
 } from './meta.ts';
 
 describe('Meta', () => {
+  describe('defaultValue()', () => {
+    it("gives a field its family's default", () => {
+      assert.equal(defaultValue('strips.3.pan'), 50);
+      assert.equal(defaultValue('strips.3.eqHi'), 30);
+      assert.equal(defaultValue('geq.bands.7'), 30);
+      assert.equal(defaultValue('strips.3.sends.0'), 0);
+      assert.equal(defaultValue('tempo'), 800);
+    });
+
+    it('falls back to 0 for a family without a fixed default', () => {
+      assert.equal(defaultValue('fx.0.tone'), 0);
+    });
+  });
+
   describe('normalizePath()', () => {
     it('strips instance indices to a family key', () => {
       assert.equal(normalizePath('strips.3.sends.2'), 'strips.sends');

@@ -1,7 +1,7 @@
 import { For, createEffect, type Accessor } from 'solid-js';
 import { LAYOUT, rangeOf } from '../../core/protocol/registry.ts';
-import { FX_DESCRIPTIONS, fxKnob, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
-import { FX_NAMES } from '../../core/protocol/meta.ts';
+import { FX_DESCRIPTIONS, fxKnob, fxKnobDefault, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
+import { FX_NAMES, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { meterFrame } from '../bridge.ts';
 import { fxFaceBindings, fxPanelBindings, type FxFaceBindings, type FxPanelBindings, type RW } from '../bindings.ts';
@@ -46,7 +46,10 @@ type FxDetailProps = {
 
 function FxStrip(props: FxStripProps) {
   const setValue = (value: number): void => props.bindings.sends[props.mix()]?.[1](value);
-  const value = (): number => props.bindings.sends[props.mix()]?.[0]() ?? 0;
+  const value = (): number => {
+    const mix = props.mix();
+    return props.bindings.sends[mix]?.[0]() ?? defaultValue(props.bindings.send(mix));
+  };
   const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
   // Per-mix, so a monitor send with a different range would just work
   const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));
@@ -102,7 +105,8 @@ export function FxStrips(props: FxStripsProps) {
 }
 
 function FxKnob(props: FxKnobProps) {
-  const getValue = (): number | undefined => props.rw[0]();
+  const getValue = (): number =>
+    props.rw[0]() ?? fxKnobDefault(props.index, props.effect(), props.knob) ?? spec().wire[0];
   const setValue = (value: number): void => props.rw[1](value);
 
   // These are driven by local props rather than desk echo, so that feedback is instant.
@@ -113,9 +117,6 @@ function FxKnob(props: FxKnobProps) {
 
   const readout = (): string => {
     const value = getValue();
-    if (value === undefined) {
-      return '';
-    }
     const [displayMin, displayMax] = spec().display;
     const unit = label() === 'Time' ? ' ms' : '';
     const min = getMin();
@@ -131,7 +132,7 @@ function FxKnob(props: FxKnobProps) {
         class="slider"
         min={String(getMin())}
         max={String(getMax())}
-        value={getValue() ?? getMin()}
+        value={getValue()}
         onInput={(e) => setValue(Number(e.currentTarget.value))}
       />
       <span class="readout">{readout()}</span>

@@ -1,7 +1,7 @@
 import type { Accessor } from 'solid-js';
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
 import { rangeOf } from '../../core/protocol/registry.ts';
-import { STRIP_NAMES } from '../../core/protocol/meta.ts';
+import { STRIP_NAMES, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import type { StripBindings } from '../bindings.ts';
 import { Meter, type Peaks } from '../components/Meter.tsx';
@@ -19,7 +19,11 @@ type ChannelStripProps = {
 };
 
 export function ChannelStrip(props: ChannelStripProps) {
-  const value = (): number => props.bindings.sends[props.mix()]?.[0]() ?? 0;
+  const value = (): number => {
+    const mix = props.mix();
+    return props.bindings.sends[mix]?.[0]() ?? defaultValue(props.bindings.send(mix));
+  };
+
   const setValue = (val: number): void => props.bindings.sends[props.mix()]?.[1](val);
   const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
   const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));

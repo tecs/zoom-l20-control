@@ -1,7 +1,7 @@
 import { createSignal, For } from 'solid-js';
 import { SCENE, SCENE_SLOTS, sceneSlotIndex } from '../../core/protocol/scenes.ts';
 import { P } from '../../core/protocol/registry.ts';
-import { META } from '../../core/protocol/meta.ts';
+import { META, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { fieldRW, observed } from '../bridge.ts';
 import { useApp } from '../context.ts';
@@ -81,7 +81,7 @@ export function Scenes(props: { press: (idx: number) => void | Promise<void> }) 
           min={MIN_BPM}
           max={MAX_BPM}
           step="0.1"
-          value={formatValue(P.tempo, tempoRaw() ?? META.tempo.default, true)}
+          value={formatValue(P.tempo, tempoRaw() ?? defaultValue(P.tempo), true)}
           onChange={(e) => setTempoRaw(META.tempo.dist.toRaw(Number(e.currentTarget.value)))}
         />
         <span>BPM</span>

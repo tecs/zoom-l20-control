@@ -1,6 +1,6 @@
 // Per-family units, dB/Hz curves, defaults and scale ticks, keyed by normalized path (strips.3.sends.2 -> strips.sends)
 
-import { REGISTRY, MIX_LABELS } from './registry.ts';
+import { REGISTRY, MIX_LABELS, EQ_GAIN_FLAT, EQ_GAIN_MAX } from './registry.ts';
 
 /** A control's readout/scale value distribution curve */
 export interface Distribution {
@@ -198,7 +198,12 @@ const MON_TICKS = [-Infinity, -40, -20, -10, 0, 10, 15];
 const MIDF_TICKS = [100, 200, 500, 1000, 2000, 4000, 8000];
 const LOWCUT_TICKS = [40, 80, 160, 320, 600];
 
-const EQ_GAIN = { unit: 'dB', default: 30, unity: 30, dist: linearDistribution(0, 60, -15, 15) };
+const EQ_GAIN = {
+  unit: 'dB',
+  default: EQ_GAIN_FLAT,
+  unity: EQ_GAIN_FLAT,
+  dist: linearDistribution(0, EQ_GAIN_MAX, -15, 15),
+};
 
 export const META = {
   'strips.sends': { role: 'Level', unit: 'dB', default: 0, unity: 82, dist: FADER_DIST, ticks: FADER_TICKS },
@@ -236,7 +241,7 @@ export const META = {
   'fx.mute': { role: 'FX Mute', default: 0 },
   'fx.solo': { role: 'FX Solo', default: 0 },
 
-  'geq.bands': { role: 'GEQ Band', unit: 'dB', default: 30, unity: 30, dist: linearDistribution(0, 60, -15, 15) },
+  'geq.bands': { role: 'GEQ Band', ...EQ_GAIN },
   'geq.on': { role: 'GEQ On', default: 0 },
 
   tempo: { role: 'Tempo', unit: 'BPM', default: 800, dist: linearDistribution(0, 2100, 40, 250) },
@@ -255,6 +260,8 @@ export const META = {
 export const FAMILIES: Readonly<Record<string, FamilyMeta>> = META;
 
 export const metaFor = (path: string): FamilyMeta | null => FAMILIES[normalizePath(path)] ?? null;
+
+export const defaultValue = (path: string): number => metaFor(path)?.default ?? 0;
 
 export const STRIP_NAMES = [
   '1',

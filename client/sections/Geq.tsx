@@ -1,6 +1,6 @@
 import { For, type Accessor } from 'solid-js';
 import { EQ_GAIN_FLAT, LAYOUT, P, rangeOf } from '../../core/protocol/registry.ts';
-import { GEQ_FREQS } from '../../core/protocol/meta.ts';
+import { GEQ_FREQS, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
@@ -24,7 +24,7 @@ function OnToggle() {
 
 function BandSlider(props: BandSliderProps) {
   const range = (): { min: number; max: number } => rangeOf(props.path);
-  const raw = (): number => props.rw[0]() ?? range().min;
+  const raw = (): number => props.rw[0]() ?? defaultValue(props.path);
   return (
     <div class="range-ctrl">
       <span class="ctrl-label">{props.label}</span>

@@ -5,6 +5,7 @@ import type { Store } from '../../core/state/store.ts';
 import { BY_PATH } from '../../core/protocol/registry.ts';
 import { asPath, assertNever } from '../../core/protocol/valuetypes.ts';
 import { formatValue } from '../../core/format.ts';
+import { defaultValue } from '../../core/protocol/meta.ts';
 import { fieldRW } from '../bridge.ts';
 import { Toggle } from './Toggle.tsx';
 import { toClassList } from '../infra/jsx.ts';
@@ -41,7 +42,11 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
       return (
         <div class="range-ctrl">
           <span class="ctrl-label">{label}</span>
-          <select class="sel" value={String(value() ?? 0)} onChange={(e) => setValue(Number(e.currentTarget.value))}>
+          <select
+            class="sel"
+            value={String(value() ?? defaultValue(path))}
+            onChange={(e) => setValue(Number(e.currentTarget.value))}
+          >
             <For each={labels}>{(name, index) => <option value={String(index())}>{`${index()}: ${name}`}</option>}</For>
           </select>
         </div>
@@ -50,6 +55,7 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
     case 'scalar':
     case 'u14': {
       const [value, setValue] = fieldRW<number>(store, asPath<number>(path));
+      const shown = (): number => value() ?? defaultValue(path);
       const { min, max } = type;
       return (
         <div class="range-ctrl">
@@ -59,10 +65,10 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
             class="slider compact"
             min={String(min)}
             max={String(max)}
-            value={value() ?? min}
+            value={shown()}
             onInput={(e) => setValue(Number(e.currentTarget.value))}
           />
-          <span class="readout">{value() === undefined ? '' : formatValue(path, value()!, options.bare)}</span>
+          <span class="readout">{formatValue(path, shown(), options.bare)}</span>
         </div>
       );
     }
@@ -88,7 +94,7 @@ const REC_STATES: readonly [RecState, RecState, RecState] = [
 
 export function makeRecButton(store: Store, path: string): JSX.Element {
   const [value, setValue] = fieldRW<number>(store, asPath<number>(path));
-  const state = (): RecState => REC_STATES[value() ?? 0] ?? REC_STATES[0];
+  const state = (): RecState => REC_STATES[value() ?? defaultValue(path)] ?? REC_STATES[0];
 
   return (
     <button
