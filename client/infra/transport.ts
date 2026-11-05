@@ -10,7 +10,8 @@ import {
 } from '../../core/messaging/blemidi.ts';
 import type { ShortMessage } from '../../core/protocol/midi.ts';
 import { sleep } from './timers.ts';
-import { bluetooth, watchAdvertisements } from './browser.ts';
+import { bluetooth, platform, watchAdvertisements } from './browser.ts';
+import { adapterNotFoundHint, bluetoothUnavailableHint, writeErrorHint } from './hints.ts';
 import { Coalescer } from '../../lib/coalescer.ts';
 import { describeError } from '../../lib/errors.ts';
 
@@ -64,7 +65,11 @@ export class BluetoothTransport implements Transport {
   private waitingValues = new Map<string, { messages: ShortMessage[]; sent: Promise<void> }>();
 
   private writeErrors = new Coalescer<string>(WRITE_ERROR_WINDOW_MS, (message, repeats) =>
-    this.errorHandler?.(`write failed - ${message} ${repeats > 0 ? `(repeated ${repeats} more times)` : ''}`),
+    this.errorHandler?.(
+      [`write failed - ${message}`, repeats > 0 ? `(repeated ${repeats} more times)` : null, writeErrorHint(platform())]
+        .filter((part) => part !== null)
+        .join(' '),
+    ),
   );
 
   // Not a method as it needs to be passed by value for referential equality while having `this` bound to the instance
@@ -88,13 +93,13 @@ export class BluetoothTransport implements Transport {
     const webBluetooth = bluetooth();
     if (!webBluetooth) {
       this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
-      throw new Error(HINT_BLUETOOTH_NOT_AVAILABLE);
+      throw new Error(bluetoothUnavailableHint(platform()));
     }
 
     const adapterAvailable = await webBluetooth.getAvailability?.();
     if (!adapterAvailable) {
       this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
-      throw new Error(HINT_ADAPTER_NOT_FOUND);
+      throw new Error(adapterNotFoundHint(platform()));
     }
 
     this.setStatus(TRANSPORT_STATUS.CONNECTING);
