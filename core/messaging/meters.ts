@@ -1,4 +1,5 @@
 import { LAYOUT } from '../protocol/registry.ts';
+import { COMMAND, isZoomSysex } from '../protocol/sysex.ts';
 
 export interface ChannelMeter {
   pre: number[];
@@ -12,6 +13,8 @@ export interface MeterFrame {
   master: { left: number; right: number };
 }
 
+const METERS = 0x04; // Event subtype
+const MIX = 6;
 const PRE_BASE = 7;
 const POST_BASE = 31;
 const MASTER_BASE = POST_BASE + 24;
@@ -33,7 +36,8 @@ const makeMeter = (data: Uint8Array, offset: number, stereo: boolean): ChannelMe
 });
 
 export function decodeMeterFrame(data: Uint8Array): MeterFrame | null {
-  if (data[1] !== 0x52 || data[4] !== 0x31 || data[5] !== 0x04) {
+  const [, , , , command, subtype] = data;
+  if (!isZoomSysex(data) || command !== COMMAND.EVENT || subtype !== METERS) {
     // not a meter frame
     return null;
   }
@@ -53,5 +57,5 @@ export function decodeMeterFrame(data: Uint8Array): MeterFrame | null {
   for (const strip of LAYOUT.fxStripsWithOffset) {
     fx.push(makeMeter(data, strip, true));
   }
-  return { mix: byteAt(data, 6), channels, fx, master: { left, right } };
+  return { mix: byteAt(data, MIX), channels, fx, master: { left, right } };
 }

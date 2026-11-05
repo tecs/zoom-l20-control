@@ -15,6 +15,22 @@ export const MESSAGE_TYPE = {
 export const SYSEX_START = 0xf0;
 export const SYSEX_END = 0xf7;
 
+export const ALL_DEVICES = 0x7f;
+const UNIVERSAL_NON_REALTIME = 0x7e;
+const GENERAL_INFORMATION = 0x06;
+const IDENTITY_REQUEST = 0x01;
+
+export const universalSysex = (device: number, ...payload: number[]): number[] => [
+  SYSEX_START,
+  UNIVERSAL_NON_REALTIME,
+  device,
+  ...payload,
+  SYSEX_END,
+];
+
+export const identityRequest = (device: number): number[] =>
+  universalSysex(device, GENERAL_INFORMATION, IDENTITY_REQUEST);
+
 const TYPE_MASK = 0xf0;
 const CHANNEL_MASK = 0x0f;
 

@@ -3,6 +3,7 @@
 import { Publisher } from '../../lib/publisher.ts';
 import { describeError } from '../../lib/errors.ts';
 import { HANDSHAKE, DUMP_REQUEST, meterSelect } from '../../core/protocol/session.ts';
+import { COMMAND, isZoomSysex } from '../../core/protocol/sysex.ts';
 import { scenePress, isSceneOnEcho } from '../../core/protocol/scenes.ts';
 import { parseTransport } from '../../core/protocol/transport.ts';
 import { calibrationReadout } from '../../core/protocol/meta.ts';
@@ -170,23 +171,23 @@ export class Session extends Publisher<[status: TransportStatus]> {
   }
 
   private handleSysex(bytes: Uint8Array): void {
-    if (bytes[1] !== 0x52) {
+    if (!isZoomSysex(bytes)) {
       return this.unhandledSysex(bytes);
     }
 
-    const [, , , , command] = bytes;
+    const [, , , , command, subtype, , scene] = bytes;
 
-    if (command === 0x2a) {
+    if (command === COMMAND.STATE_DUMP) {
       return this.loadDump(bytes);
     }
-    if (command === 0x31) {
+    if (command === COMMAND.EVENT) {
       return this.updateMeters(bytes);
     }
-    if (command === 0x08 && bytes[5] === 0x00) {
+    if (command === COMMAND.SCENE_RECALL && subtype === 0x00) {
       return void this.transport.sendSysEx(DUMP_REQUEST);
     }
-    if (command === 0x32 && bytes[5] === 0x00) {
-      return this.sceneState.setActive(bytes[7] ?? null);
+    if (command === COMMAND.SCENE && subtype === 0x00) {
+      return this.sceneState.setActive(scene ?? null);
     }
 
     this.unhandledSysex(bytes);
