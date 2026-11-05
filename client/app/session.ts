@@ -4,7 +4,8 @@ import { Publisher } from '../../lib/publisher.ts';
 import { describeError } from '../../lib/errors.ts';
 import { HANDSHAKE, DUMP_REQUEST, meterSelect } from '../../core/protocol/session.ts';
 import { COMMAND, isZoomSysex } from '../../core/protocol/sysex.ts';
-import { scenePress, isSceneOnEcho } from '../../core/protocol/scenes.ts';
+import { isSceneOnEcho } from '../../core/protocol/scenes.ts';
+import { buttonPress } from '../../core/protocol/buttons.ts';
 import { parseTransport } from '../../core/protocol/transport.ts';
 import { calibrationReadout } from '../../core/protocol/meta.ts';
 import { decodeMeterFrame } from '../../core/messaging/meters.ts';
@@ -99,7 +100,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
   }
 
   pressScene(index: number): Promise<void> {
-    return this.transport.sendMessage(scenePress(index));
+    return this.transport.sendMessage(buttonPress(index));
   }
 
   send(message: ShortMessage): void {

@@ -1,3 +1,4 @@
+import { BUTTON_VALUE, buttonIndex, buttonMessage } from './buttons.ts';
 import { channelOf, type ShortMessage } from './midi.ts';
 
 export const TRANSPORT = { STOP: 0x00, PLAY: 0x01, PAUSE: 0x02, REC_ARMED: 0x03, RECORDING: 0x05 } as const;
@@ -11,40 +12,50 @@ export type TransportMessage =
   | { kind: 'playhead'; field: PlayheadField; value: number }
   | { kind: 'other' };
 
+/** Button indices */
 export const TRANSPORT_BTN = {
-  REC: 0xb9,
-  PLAY_PAUSE: 0xba,
-  STOP: 0xbb,
-  REWIND: 0xbc,
-  FF: 0xbd,
-  OVERDUB: 0xbe,
+  REC: 25,
+  PLAY_PAUSE: 26,
+  STOP: 27,
+  REWIND: 28,
+  FF: 29,
+  OVERDUB: 30,
 } as const;
 
-export const transportPress = (status: number): ShortMessage => ({
-  status,
-  d1: 0x57,
-  d2: 0x03,
-});
+// Transport button space
+const FIRST_INDEX = 24;
+const LAST_INDEX = 31;
+const STATE_INDEX = 24;
+const MODE_INDEX = 31;
 
-export const transportHold = (status: number, down: boolean): ShortMessage => ({
-  status,
-  d1: 0x57,
-  d2: down ? 0x05 : 0x04,
-});
+const PLAYHEAD_CTRL = 0x58;
 
-export function parseTransport({ status, d1, d2 }: ShortMessage): TransportMessage | null {
+export const transportHold = (index: number, down: boolean): ShortMessage =>
+  buttonMessage(index, down ? BUTTON_VALUE.HOLD_DOWN : BUTTON_VALUE.HOLD_UP);
+
+export function parseTransport(message: ShortMessage): TransportMessage | null {
+  const { status, d1, d2 } = message;
   const channel = channelOf(status);
 
-  // state family
-  if (d1 === 0x57 && channel >= 8) {
-    if (channel === 8) return { kind: 'state', value: d2 };
-    if (channel === 14) return { kind: 'overdub', value: d2 !== 0 };
-    if (channel === 15) return { kind: 'mode', value: d2 };
+  const index = buttonIndex(message);
+  if (index !== null && index >= FIRST_INDEX && index <= LAST_INDEX) {
+    if (index === STATE_INDEX) {
+      return { kind: 'state', value: d2 };
+    }
+
+    if (index === TRANSPORT_BTN.OVERDUB) {
+      return { kind: 'overdub', value: d2 !== 0 };
+    }
+
+    if (index === MODE_INDEX) {
+      return { kind: 'mode', value: d2 };
+    }
+
     return { kind: 'other' };
   }
 
   // playhead
-  if (d1 === 0x58 && channel !== 2 && channel !== 3) {
+  if (d1 === PLAYHEAD_CTRL && channel !== 2 && channel !== 3) {
     if (channel === 8) return { kind: 'playhead', field: 'hHi', value: d2 };
     if (channel === 9) return { kind: 'playhead', field: 'hLo', value: d2 };
     if (channel === 10) return { kind: 'playhead', field: 'm', value: d2 };

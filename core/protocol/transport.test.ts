@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { TRANSPORT_BTN, transportPress, transportHold, parseTransport } from './transport.ts';
+import { TRANSPORT_BTN, transportHold, parseTransport } from './transport.ts';
 
 describe('Transport', () => {
   describe('parseTransport()', () => {
@@ -25,15 +25,6 @@ describe('Transport', () => {
     it('ignores scene and meter buttons on 0x57 ch<8', () => {
       assert.equal(parseTransport({ status: 0xb5, d1: 0x57, d2: 2 }), null);
       assert.equal(parseTransport({ status: 0xb4, d1: 0x57, d2: 3 }), null);
-    });
-  });
-
-  describe('transportPress()', () => {
-    it('presses the button on ctrl 0x57 with value 03', () => {
-      assert.deepEqual(transportPress(TRANSPORT_BTN.PLAY_PAUSE), { status: 0xba, d1: 0x57, d2: 0x03 });
-      assert.deepEqual(transportPress(TRANSPORT_BTN.STOP), { status: 0xbb, d1: 0x57, d2: 0x03 });
-      assert.deepEqual(transportPress(TRANSPORT_BTN.REC), { status: 0xb9, d1: 0x57, d2: 0x03 });
-      assert.deepEqual(transportPress(TRANSPORT_BTN.OVERDUB), { status: 0xbe, d1: 0x57, d2: 0x03 });
     });
   });
 

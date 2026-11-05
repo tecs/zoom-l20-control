@@ -2,6 +2,10 @@
 
 import { ALL_DEVICES, identityRequest, universalSysex, type ShortMessage } from './midi.ts';
 import { COMMAND, zoomSysex } from './sysex.ts';
+import { buttonMessage } from './buttons.ts';
+
+// In the button space, though not a button - its value is the mix
+const METER_SELECT_INDEX = 21;
 
 export const DUMP_REQUEST = zoomSysex(COMMAND.DUMP_REQUEST);
 
@@ -27,8 +31,4 @@ export const HANDSHAKE = [
  *
  * 0: master, 1-6: A-F
  */
-export const meterSelect = (mix: number): ShortMessage => ({
-  status: 0xb5,
-  d1: 0x57,
-  d2: mix,
-});
+export const meterSelect = (mix: number): ShortMessage => buttonMessage(METER_SELECT_INDEX, mix);

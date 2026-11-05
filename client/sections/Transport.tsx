@@ -1,4 +1,5 @@
-import { TRANSPORT, TRANSPORT_BTN, transportPress, transportHold } from '../../core/protocol/transport.ts';
+import { TRANSPORT, TRANSPORT_BTN, transportHold } from '../../core/protocol/transport.ts';
+import { buttonPress } from '../../core/protocol/buttons.ts';
 import { observed } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import type { ShortMessage } from '../../core/protocol/midi.ts';
@@ -11,7 +12,7 @@ type TransportProps = {
 
 type HoldButtonProps = TransportProps & {
   label: string;
-  status: number;
+  index: number;
 };
 
 function HoldButton(props: HoldButtonProps) {
@@ -19,7 +20,7 @@ function HoldButton(props: HoldButtonProps) {
   const set = (state: boolean): void => {
     if (down !== state) {
       down = state;
-      props.send(transportHold(props.status, state));
+      props.send(transportHold(props.index, state));
     }
   };
 
@@ -48,7 +49,7 @@ export function Transport(props: TransportProps) {
     (notify) => transportState.subscribe(notify),
   );
 
-  const press = (status: number) => props.send(transportPress(status));
+  const press = (index: number) => props.send(buttonPress(index));
 
   const time = (): string => {
     const { h, m, s } = stateData().playhead;
@@ -68,7 +69,7 @@ export function Transport(props: TransportProps) {
   return (
     <div id="transport">
       <span class="transport-time">{time()}</span>
-      <HoldButton label="⏮" status={TRANSPORT_BTN.REWIND} send={props.send} />
+      <HoldButton label="⏮" index={TRANSPORT_BTN.REWIND} send={props.send} />
       <button type="button" title="⏹" onClick={() => press(TRANSPORT_BTN.STOP)}>
         ⏹
       </button>
@@ -84,7 +85,7 @@ export function Transport(props: TransportProps) {
       <button type="button" class="rec" classList={{ on: recOn() }} title="⏺" onClick={() => press(TRANSPORT_BTN.REC)}>
         ⏺
       </button>
-      <HoldButton label="⏭" status={TRANSPORT_BTN.FF} send={props.send} />
+      <HoldButton label="⏭" index={TRANSPORT_BTN.FF} send={props.send} />
       <button
         type="button"
         class="toggle"
