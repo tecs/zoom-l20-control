@@ -185,7 +185,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
     if (command === 0x08 && bytes[5] === 0x00) {
       return void this.transport.sendSysEx(DUMP_REQUEST);
     }
-    if (command === 0x32) {
+    if (command === 0x32 && bytes[5] === 0x00) {
       return this.sceneState.setActive(bytes[7] ?? null);
     }
 

@@ -92,6 +92,14 @@ describe('Session', () => {
       assert.equal(sceneState.active, 3);
     });
 
+    it('keeps the active scene on the undecoded scene reports sent on connect', () => {
+      const { transport, sceneState } = setup();
+      transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x32, 0x00, 0x01, 0x01, 0x00, 0x00, 0xf7));
+      transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x32, 0x01, 0x01, 0x00, 0x00, 0x00, 0xf7));
+      transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x32, 0x02, 0x01, 0x00, 0x00, 0x00, 0xf7));
+      assert.equal(sceneState.active, 1);
+    });
+
     it('ignores SysEx it has no handler for, apart from a debug line', () => {
       const { transport, log } = setup();
       transport.receive(sysex(0xf0, 0x52, 0x00, 0x00, 0x7f, 0xf7));
