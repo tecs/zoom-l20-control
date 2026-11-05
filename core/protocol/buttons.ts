@@ -1,14 +1,12 @@
-import { ccStatus, channelOf, type ShortMessage } from './midi.ts';
+import { flatAddress } from './address.ts';
+import { channelOf, type ShortMessage } from './midi.ts';
 
 const FIRST_CTRL = 0x56;
 const LAST_CTRL = 0x57;
 
 export const BUTTON_VALUE = { PRESS: 0x03, HOLD_UP: 0x04, HOLD_DOWN: 0x05 } as const;
 
-export const buttonAddress = (index: number): { status: number; ctrl: number } => ({
-  status: ccStatus(index),
-  ctrl: FIRST_CTRL + (index >> 4),
-});
+export const buttonAddress = (index: number): { status: number; ctrl: number } => flatAddress(FIRST_CTRL, index);
 
 export const buttonMessage = (index: number, value: number): ShortMessage => {
   const { status, ctrl } = buttonAddress(index);

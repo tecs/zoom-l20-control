@@ -1,12 +1,10 @@
 import { For, type Accessor } from 'solid-js';
-import { LAYOUT, P, rangeOf } from '../../core/protocol/registry.ts';
+import { EQ_GAIN_FLAT, LAYOUT, P, rangeOf } from '../../core/protocol/registry.ts';
 import { GEQ_FREQS } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import { sleep } from '../infra/timers.ts';
-
-const FLAT = 0x1e; // 30 = 0 dB
 
 type BandSliderProps = {
   path: string;
@@ -48,7 +46,7 @@ export function Geq() {
   const bands = LAYOUT.geqBands.map((n) => fieldRW<number>(store, P.geq.band(n)));
   const flat = async (): Promise<void> => {
     for (const [, set] of bands) {
-      set(FLAT);
+      set(EQ_GAIN_FLAT);
       // Space out each set(), so the desk doesn't drop commands
       await sleep(15);
     }

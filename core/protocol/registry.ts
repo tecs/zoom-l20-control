@@ -3,6 +3,7 @@
 import { bool, scalar, enumOf, u14, str, hms, asPath } from './valuetypes.ts';
 import type { ValueType, Path, ValueOf } from './valuetypes.ts';
 import { ccStatus, DATA_MAX } from './midi.ts';
+import { flatAddress } from './address.ts';
 
 type StripControl = (typeof PER_STRIP)[number];
 export type StripControlKey = StripControl[0];
@@ -37,6 +38,28 @@ const FX_STRIPS = 2;
 const GEQ_BANDS = 15;
 const GRID_OFFSET = 171;
 const PARAM_STRIDE = STRIPS;
+
+// One controller per family
+const SEND_CTRL = 0x3c;
+const FX_PARAM_CTRL = 0x4e;
+const FX_FIRST_CTRL = 0x50;
+const MONITOR_CTRL = 0x53;
+const MASTER_CTRL = 0x54;
+const GEQ_CTRL = 0x55;
+const TEMPO_CTRL = 0x58;
+
+/** Channels on FX_PARAM_CTRL */
+const FX_PARAM = { EFFECT: 0, TONE: 4, DECAY: 12 } as const;
+/** Indices in the FX flat space */
+const FX_SLOT = { MUTE: 4, SOLO: 8, SENDS: 12 } as const;
+const MASTER = { REC: 8, MUTE: 9, LEVEL: 10 } as const;
+const GEQ_ON = 15;
+const TEMPO = { MSB: 2, LSB: 3 } as const;
+
+export const FADER_MAX = 0x78;
+const EQ_GAIN_MAX = 0x3c;
+export const EQ_GAIN_FLAT = 0x1e; // 0 dB
+const EQ_GAIN = scalar({ max: EQ_GAIN_MAX, center: EQ_GAIN_FLAT });
 
 export const FX1_EFFECTS = [
   'Hall 1',
@@ -90,10 +113,10 @@ const PER_STRIP = [
   ['phase', 4, bool(1), 'scene', 0x0a],
   ['pan', 5, scalar({ max: 100, center: 50 }), 'scene', 0x0c],
   ['eqOff', 6, bool(1), 'scene', 0x0e],
-  ['eqHi', 7, scalar({ max: 0x3c, center: 0x1e }), 'scene', 0x14],
+  ['eqHi', 7, EQ_GAIN, 'scene', 0x14],
   ['eqMidF', 8, scalar({ max: 0x60 }), 'scene', 0x18],
-  ['eqMid', 9, scalar({ max: 0x3c, center: 0x1e }), 'scene', 0x1a],
-  ['eqLo', 10, scalar({ max: 0x3c, center: 0x1e }), 'scene', 0x2c],
+  ['eqMid', 9, EQ_GAIN, 'scene', 0x1a],
+  ['eqLo', 10, EQ_GAIN, 'scene', 0x2c],
   ['lowCut', 11, scalar({ max: 0x38 }), 'scene', 0x2e],
   ['fx1Send', 12, scalar({ max: 0x3c }), 'scene', 0x34],
   ['fx2Send', 13, scalar({ max: 0x3c }), 'scene', 0x36],
@@ -117,9 +140,9 @@ const stripAddress = (strip: number): [channel: number, odd: number] => {
   return [(strip - MONO_STRIPS) * 2, 1];
 };
 
-const fxFaderAddress = (index: number, mix: number): [status: number, ctrl: number] => {
-  const slot = 12 + 4 * mix + index;
-  return [ccStatus(slot), 0x50 + (slot >> 4)];
+const fxAddress = (slot: number): Live => {
+  const { status, ctrl } = flatAddress(FX_FIRST_CTRL, slot);
+  return cc(status, ctrl);
 };
 
 export function buildRegistry(): Descriptor[] {
@@ -148,10 +171,10 @@ export function buildRegistry(): Descriptor[] {
     for (const mix of MIX_LABELS.keys()) {
       add(
         `strips.${index}.sends.${mix}`,
-        scalar({ max: 0x78 }),
+        scalar({ max: FADER_MAX }),
         'scene',
         gridAt(14 + mix, index),
-        cc(ccStatus(channel), 0x3c + 2 * mix + odd),
+        cc(ccStatus(channel), SEND_CTRL + 2 * mix + odd),
       );
     }
   }
@@ -163,45 +186,45 @@ export function buildRegistry(): Descriptor[] {
       enumOf(index === 0 ? FX1_EFFECTS : FX2_EFFECTS),
       'scene',
       549 + index,
-      cc(ccStatus(index), 0x4e),
+      cc(ccStatus(FX_PARAM.EFFECT + index), FX_PARAM_CTRL),
     );
     add(
       `fx.${index}.tone`,
       u14({ max: 1023 }),
       'scene',
       551 + 2 * index,
-      cc14(0x4e, ccStatus(4 + 2 * index), ccStatus(5 + 2 * index)),
+      cc14(FX_PARAM_CTRL, ccStatus(FX_PARAM.TONE + 2 * index), ccStatus(FX_PARAM.TONE + 2 * index + 1)),
     );
     add(
       `fx.${index}.decay`,
       u14({ max: 255 }),
       'scene',
       555 + 2 * index,
-      cc14(0x4e, ccStatus(12 + 2 * index), ccStatus(13 + 2 * index)),
+      cc14(FX_PARAM_CTRL, ccStatus(FX_PARAM.DECAY + 2 * index), ccStatus(FX_PARAM.DECAY + 2 * index + 1)),
     );
-    add(`fx.${index}.mute`, bool(1), 'scene', 559 + index, cc(ccStatus(4 + index), 0x50));
-    add(`fx.${index}.solo`, bool(1), 'ephemeral', null, cc(ccStatus(8 + index), 0x50));
+    add(`fx.${index}.mute`, bool(1), 'scene', 559 + index, fxAddress(FX_SLOT.MUTE + index));
+    add(`fx.${index}.solo`, bool(1), 'ephemeral', null, fxAddress(FX_SLOT.SOLO + index));
     for (const mix of MIX_LABELS.keys()) {
-      const [status, ctrl] = fxFaderAddress(index, mix);
-      add(`fx.${index}.sends.${mix}`, scalar({ max: 0x78 }), 'scene', 563 + index + 2 * mix, cc(status, ctrl));
+      const slot = FX_SLOT.SENDS + 4 * mix + index;
+      add(`fx.${index}.sends.${mix}`, scalar({ max: FADER_MAX }), 'scene', 563 + index + 2 * mix, fxAddress(slot));
     }
   }
 
   // Master + monitor output levels
-  add('master.level', scalar({ max: 0x78 }), 'global', 579, cc(0xba, 0x54));
-  add('master.mute', bool(1), 'global', null, cc(0xb9, 0x54));
-  add('master.rec', REC_ENUM, 'ephemeral', null, cc(0xb8, 0x54));
+  add('master.level', scalar({ max: FADER_MAX }), 'global', 579, cc(ccStatus(MASTER.LEVEL), MASTER_CTRL));
+  add('master.mute', bool(1), 'global', null, cc(ccStatus(MASTER.MUTE), MASTER_CTRL));
+  add('master.rec', REC_ENUM, 'ephemeral', null, cc(ccStatus(MASTER.REC), MASTER_CTRL));
   for (const index of MONITOR_LABELS.keys()) {
-    add(`monitors.${index}.level`, scalar({ max: 0x76 }), 'global', 580 + index, cc(ccStatus(index), 0x53));
+    add(`monitors.${index}.level`, scalar({ max: 0x76 }), 'global', 580 + index, cc(ccStatus(index), MONITOR_CTRL));
   }
 
   // Graphic EQ
-  add('geq.on', bool(1), 'global', 586, cc(0xbf, 0x55));
+  add('geq.on', bool(1), 'global', 586, cc(ccStatus(GEQ_ON), GEQ_CTRL));
   for (const index of LAYOUT.geqBands) {
-    add(`geq.bands.${index}`, scalar({ max: 0x3c, center: 0x1e }), 'global', 587 + index, cc(ccStatus(index), 0x55));
+    add(`geq.bands.${index}`, EQ_GAIN, 'global', 587 + index, cc(ccStatus(index), GEQ_CTRL));
   }
 
-  add('tempo', u14(), 'global', null, cc14(0x58, 0xb2, 0xb3)); // (BPM - 40) * 10
+  add('tempo', u14(), 'global', null, cc14(TEMPO_CTRL, ccStatus(TEMPO.MSB), ccStatus(TEMPO.LSB))); // (BPM - 40) * 10
   add('sceneDirty', bool(1), 'ephemeral', 603, null); // any param changed on currently recalled scene?
 
   // Recorder state
