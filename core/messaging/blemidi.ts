@@ -13,6 +13,7 @@ const isStatus = (byte: number): boolean => (byte & 0x80) !== 0;
 export class BleMidiDecoder {
   private bytes: number[] = [];
   private sysexBuffer: number[] = [];
+  private discarding = false;
 
   decodePacket(packet: Uint8Array): MidiMessage[] {
     // Drop the header byte
@@ -20,22 +21,26 @@ export class BleMidiDecoder {
     const messages: MidiMessage[] = [];
 
     // SysEx can span multiple packets - continue parsing if buffer has data
-    if (this.sysexBuffer.length > 0) {
+    const [first, second] = this.bytes;
+    if (this.sysexOpen() && first !== undefined && (!isStatus(first) || second === 0xf7)) {
       const message = this.consumeSysex();
       if (message) {
         messages.push(message);
       }
     }
 
-    while (true) {
+    while (this.bytes.length > 0) {
       const message = this.consumeMessage();
-      if (!message) {
-        break;
+      if (message) {
+        messages.push(message);
       }
-      messages.push(message);
     }
 
     return messages;
+  }
+
+  private sysexOpen(): boolean {
+    return this.sysexBuffer.length > 0 || this.discarding;
   }
 
   private consumeMessage(): MidiMessage | null {
@@ -54,7 +59,18 @@ export class BleMidiDecoder {
       return null;
     }
 
+    // End of a SysEx that didn't start
+    if (this.bytes[0] === 0xf7) {
+      this.bytes.shift();
+      return null;
+    }
+
     if (this.bytes[0] === 0xf0) {
+      // A SysEx starting while another is open
+      if (this.sysexOpen()) {
+        this.sysexBuffer = [];
+        this.discarding = true;
+      }
       return this.consumeSysex();
     }
     return this.consumeShortMessage();
@@ -67,7 +83,15 @@ export class BleMidiDecoder {
       if (byte === 0xf7) {
         const bytes = Uint8Array.from(this.sysexBuffer.concat(byte));
         this.sysexBuffer = [];
+        if (this.discarding) {
+          this.discarding = false;
+          return null;
+        }
         return { type: 'sysex', bytes };
+      }
+
+      if (this.discarding) {
+        continue;
       }
 
       if (!isStatus(byte) || (byte === 0xf0 && this.sysexBuffer.length === 0)) {

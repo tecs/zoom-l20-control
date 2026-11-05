@@ -1,6 +1,7 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { BleMidiDecoder, encodeShortMessage, encodeSysEx, type MidiMessage } from './blemidi.ts';
+import { ccsInsideMeterFrame, interleavedMeterFrames, orphanedMeterFrameStart } from '../fixtures/packets.ts';
 
 const header = [0xf0, 0x52, 0x00, 0x00, 0x2a];
 
@@ -17,6 +18,46 @@ describe('BLE-MIDI', () => {
       assertMessage(message, [0xb0, 0x3c, 0x41]);
       assert.equal(message.type, 'midi');
       assert.equal(additionalMessages.length, 0);
+    });
+
+    it('decodes packets of other messages that arrive inside a SysEx, and keeps the SysEx', () => {
+      const decoder = new BleMidiDecoder();
+      const messages = ccsInsideMeterFrame.flatMap((packet) => decoder.decodePacket(packet));
+      assert.deepEqual(
+        messages.filter(({ type }) => type === 'midi').map(({ bytes }) => [...bytes]),
+        [
+          [0xbe, 0x4e, 0x00],
+          [0xbf, 0x4e, 0x06],
+          [0xbe, 0x4e, 0x00],
+          [0xbf, 0x4e, 0x04],
+        ],
+      );
+      assert.deepEqual(
+        messages.filter(({ type }) => type === 'sysex').map(({ bytes }) => bytes.length),
+        [58],
+      );
+    });
+
+    it('drops both SysEx when one starts before the other ends, and resyncs after', () => {
+      const decoder = new BleMidiDecoder();
+      const decode = (packets: Uint8Array[]) => packets.flatMap((packet) => decoder.decodePacket(packet));
+
+      assert.deepEqual(decode(orphanedMeterFrameStart), []);
+      assert.deepEqual(
+        decode(interleavedMeterFrames).map(({ type, bytes }) => [type, ...bytes]),
+        [
+          ['midi', 0xb6, 0x4e, 0x00],
+          ['midi', 0xb7, 0x4e, 0x64],
+          ['midi', 0xb6, 0x4e, 0x00],
+          ['midi', 0xb7, 0x4e, 0x64],
+        ],
+      );
+      assert.deepEqual(
+        decode(ccsInsideMeterFrame)
+          .filter(({ type }) => type === 'sysex')
+          .map(({ bytes }) => bytes.length),
+        [58],
+      );
     });
   });
 
