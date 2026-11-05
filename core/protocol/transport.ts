@@ -1,4 +1,4 @@
-import type { ShortMessage } from './midi.ts';
+import { channelOf, type ShortMessage } from './midi.ts';
 
 export const TRANSPORT = { STOP: 0x00, PLAY: 0x01, PAUSE: 0x02, REC_ARMED: 0x03, RECORDING: 0x05 } as const;
 
@@ -33,7 +33,7 @@ export const transportHold = (status: number, down: boolean): ShortMessage => ({
 });
 
 export function parseTransport({ status, d1, d2 }: ShortMessage): TransportMessage | null {
-  const channel = status & 0x0f;
+  const channel = channelOf(status);
 
   // state family
   if (d1 === 0x57 && channel >= 8) {

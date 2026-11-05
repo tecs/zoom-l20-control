@@ -1,5 +1,7 @@
 // Pure boundary between raw wire bytes and semantic values
 
+import { DATA_MAX } from './midi.ts';
+
 export type Kind = 'bool' | 'scalar' | 'enum' | 'u14' | 'str' | 'hms';
 export type Value = number | boolean | string;
 
@@ -49,7 +51,7 @@ export type ValueType = BoolValueType | ScalarValueType | EnumValueType | U14Val
 /** Extract the value type from any ValueType member */
 export type ValueOf<V> = V extends BaseValueType<infer T, Kind> ? T : never;
 
-const U7_MAX = 0x7f;
+const U7_MAX = DATA_MAX;
 const U14_MAX = 0x3fff;
 
 type Range = { min?: number; max?: number };

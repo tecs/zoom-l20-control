@@ -2,6 +2,7 @@
 
 import { bool, scalar, enumOf, u14, str, hms, asPath } from './valuetypes.ts';
 import type { ValueType, Path, ValueOf } from './valuetypes.ts';
+import { ccStatus, DATA_MAX } from './midi.ts';
 
 type StripControl = (typeof PER_STRIP)[number];
 export type StripControlKey = StripControl[0];
@@ -118,7 +119,7 @@ const stripAddress = (strip: number): [channel: number, odd: number] => {
 
 const fxFaderAddress = (index: number, mix: number): [status: number, ctrl: number] => {
   const slot = 12 + 4 * mix + index;
-  return [0xb0 | (slot & 0x0f), 0x50 + (slot >> 4)];
+  return [ccStatus(slot), 0x50 + (slot >> 4)];
 };
 
 export function buildRegistry(): Descriptor[] {
@@ -142,7 +143,7 @@ export function buildRegistry(): Descriptor[] {
   for (let index = 0; index < STRIPS; index++) {
     const [channel, odd] = stripAddress(index);
     for (const [key, dumpIndex, type, tier, ctrl] of PER_STRIP) {
-      add(`strips.${index}.${key}`, type, tier, gridAt(dumpIndex, index), cc(0xb0 | channel, ctrl + odd));
+      add(`strips.${index}.${key}`, type, tier, gridAt(dumpIndex, index), cc(ccStatus(channel), ctrl + odd));
     }
     for (const mix of MIX_LABELS.keys()) {
       add(
@@ -150,7 +151,7 @@ export function buildRegistry(): Descriptor[] {
         scalar({ max: 0x78 }),
         'scene',
         gridAt(14 + mix, index),
-        cc(0xb0 | channel, 0x3c + 2 * mix + odd),
+        cc(ccStatus(channel), 0x3c + 2 * mix + odd),
       );
     }
   }
@@ -162,24 +163,24 @@ export function buildRegistry(): Descriptor[] {
       enumOf(index === 0 ? FX1_EFFECTS : FX2_EFFECTS),
       'scene',
       549 + index,
-      cc(0xb0 | index, 0x4e),
+      cc(ccStatus(index), 0x4e),
     );
     add(
       `fx.${index}.tone`,
       u14({ max: 1023 }),
       'scene',
       551 + 2 * index,
-      cc14(0x4e, 0xb0 | (4 + 2 * index), 0xb0 | (5 + 2 * index)),
+      cc14(0x4e, ccStatus(4 + 2 * index), ccStatus(5 + 2 * index)),
     );
     add(
       `fx.${index}.decay`,
       u14({ max: 255 }),
       'scene',
       555 + 2 * index,
-      cc14(0x4e, 0xb0 | (12 + 2 * index), 0xb0 | (13 + 2 * index)),
+      cc14(0x4e, ccStatus(12 + 2 * index), ccStatus(13 + 2 * index)),
     );
-    add(`fx.${index}.mute`, bool(1), 'scene', 559 + index, cc(0xb0 | (4 + index), 0x50));
-    add(`fx.${index}.solo`, bool(1), 'ephemeral', null, cc(0xb0 | (8 + index), 0x50));
+    add(`fx.${index}.mute`, bool(1), 'scene', 559 + index, cc(ccStatus(4 + index), 0x50));
+    add(`fx.${index}.solo`, bool(1), 'ephemeral', null, cc(ccStatus(8 + index), 0x50));
     for (const mix of MIX_LABELS.keys()) {
       const [status, ctrl] = fxFaderAddress(index, mix);
       add(`fx.${index}.sends.${mix}`, scalar({ max: 0x78 }), 'scene', 563 + index + 2 * mix, cc(status, ctrl));
@@ -191,13 +192,13 @@ export function buildRegistry(): Descriptor[] {
   add('master.mute', bool(1), 'global', null, cc(0xb9, 0x54));
   add('master.rec', REC_ENUM, 'ephemeral', null, cc(0xb8, 0x54));
   for (const index of MONITOR_LABELS.keys()) {
-    add(`monitors.${index}.level`, scalar({ max: 0x76 }), 'global', 580 + index, cc(0xb0 | index, 0x53));
+    add(`monitors.${index}.level`, scalar({ max: 0x76 }), 'global', 580 + index, cc(ccStatus(index), 0x53));
   }
 
   // Graphic EQ
   add('geq.on', bool(1), 'global', 586, cc(0xbf, 0x55));
   for (const index of LAYOUT.geqBands) {
-    add(`geq.bands.${index}`, scalar({ max: 0x3c, center: 0x1e }), 'global', 587 + index, cc(0xb0 | index, 0x55));
+    add(`geq.bands.${index}`, scalar({ max: 0x3c, center: 0x1e }), 'global', 587 + index, cc(ccStatus(index), 0x55));
   }
 
   add('tempo', u14(), 'global', null, cc14(0x58, 0xb2, 0xb3)); // (BPM - 40) * 10
@@ -206,7 +207,7 @@ export function buildRegistry(): Descriptor[] {
   // Recorder state
   add('recorder.name', str(13), 'global', 638, null); // recording file name, YYMMDD_HHMMSS
   add('recorder.atMarker', enumOf(['(none)', 'at mark', 'not at mark']), 'global', 616, null); // playhead exactly on the current mark?
-  add('recorder.currentMarker', scalar({ max: 0x7f }), 'global', 617, null); // current mark # (mark at/last before playhead)
+  add('recorder.currentMarker', scalar({ max: DATA_MAX }), 'global', 617, null); // current mark # (mark at/last before playhead)
   add('recorder.duration', hms(), 'global', 620, null); // total length, HH:MM:SS -> seconds
   add('recorder.playhead', hms(), 'global', 624, null); // playhead position, HH:MM:SS -> seconds
 

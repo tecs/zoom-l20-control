@@ -1,6 +1,6 @@
 // Pure BLE-MIDI framing (MIDI-over-Bluetooth-LE 1.0)
 
-import type { ShortMessage } from '../protocol/midi.ts';
+import { dataLength, isStatus, STATUS_BIT, SYSEX_END, SYSEX_START, type ShortMessage } from '../protocol/midi.ts';
 
 // Standard GATT identifiers
 export const BLE_MIDI_SERVICE_UUID = '03b80e5a-ede8-4b33-a751-6ce34ec4c700';
@@ -8,7 +8,8 @@ export const BLE_MIDI_CHARACTERISTIC_UUID = '7772e5db-3868-4112-a1a9-f2669d106bf
 
 export type MidiMessage = { type: 'midi' | 'sysex'; bytes: Uint8Array };
 
-const isStatus = (byte: number): boolean => (byte & 0x80) !== 0;
+const headerByte = (ts: number): number => STATUS_BIT | ((ts >> 7) & 0x3f);
+const timestampByte = (ts: number): number => STATUS_BIT | (ts & 0x7f);
 
 export class BleMidiDecoder {
   private bytes: number[] = [];
@@ -22,7 +23,7 @@ export class BleMidiDecoder {
 
     // SysEx can span multiple packets - continue parsing if buffer has data
     const [first, second] = this.bytes;
-    if (this.sysexOpen() && first !== undefined && (!isStatus(first) || second === 0xf7)) {
+    if (this.sysexOpen() && first !== undefined && (!isStatus(first) || second === SYSEX_END)) {
       const message = this.consumeSysex();
       if (message) {
         messages.push(message);
@@ -60,12 +61,12 @@ export class BleMidiDecoder {
     }
 
     // End of a SysEx that didn't start
-    if (this.bytes[0] === 0xf7) {
+    if (this.bytes[0] === SYSEX_END) {
       this.bytes.shift();
       return null;
     }
 
-    if (this.bytes[0] === 0xf0) {
+    if (this.bytes[0] === SYSEX_START) {
       // A SysEx starting while another is open
       if (this.sysexOpen()) {
         this.sysexBuffer = [];
@@ -80,7 +81,7 @@ export class BleMidiDecoder {
     while (this.bytes.length > 0) {
       const byte = this.bytes.shift() as number;
 
-      if (byte === 0xf7) {
+      if (byte === SYSEX_END) {
         const bytes = Uint8Array.from(this.sysexBuffer.concat(byte));
         this.sysexBuffer = [];
         if (this.discarding) {
@@ -94,7 +95,7 @@ export class BleMidiDecoder {
         continue;
       }
 
-      if (!isStatus(byte) || (byte === 0xf0 && this.sysexBuffer.length === 0)) {
+      if (!isStatus(byte) || (byte === SYSEX_START && this.sysexBuffer.length === 0)) {
         this.sysexBuffer.push(byte);
       }
     }
@@ -104,39 +105,31 @@ export class BleMidiDecoder {
 
   private consumeShortMessage(): MidiMessage {
     const status = this.bytes.shift() as number;
-    const hi = status & 0xf0;
-
-    const bytes = [status];
-
-    if (status < 0xf0) {
-      const length = hi === 0xc0 || hi === 0xd0 ? 1 : 2;
-      bytes.push(...this.bytes.splice(0, length));
-    }
-
+    const bytes = [status, ...this.bytes.splice(0, dataLength(status))];
     return { type: 'midi', bytes: Uint8Array.from(bytes) };
   }
 }
 
 /** Encode a 3-byte channel message as a BLE-MIDI packet. Timestamp is advisory (the mixer ignores it). */
 export const encodeShortMessage = ({ status, d1, d2 }: ShortMessage, ts = 0) =>
-  Uint8Array.from([0x80 | ((ts >> 7) & 0x3f), 0x80 | (ts & 0x7f), status, d1, d2]);
+  Uint8Array.from([headerByte(ts), timestampByte(ts), status, d1, d2]);
 
 /** Encode a SysEx byte array into one or more BLE-MIDI packets */
 export function encodeSysEx(sysex: number[], maxPacket = 20, ts = 0): Uint8Array[] {
-  const headerByte = 0x80 | ((ts >> 7) & 0x3f);
-  const tsByte = 0x80 | (ts & 0x7f);
+  const header = headerByte(ts);
+  const tsByte = timestampByte(ts);
   const packets: Uint8Array[] = [];
 
   const bytes = sysex.slice();
   while (bytes.length > 0) {
-    const packet = [headerByte];
+    const packet = [header];
     if (bytes.length === sysex.length) {
       packet.push(tsByte);
     }
 
     while (bytes.length && packet.length < maxPacket) {
       const byte = bytes.shift() as number;
-      if (byte === 0xf7) {
+      if (byte === SYSEX_END) {
         // Need room for tsByte + F7
         if (packet.length <= maxPacket - 2) {
           packet.push(tsByte, byte);

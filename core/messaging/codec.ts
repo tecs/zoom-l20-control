@@ -2,7 +2,7 @@
 
 import { REGISTRY, BY_PATH, type Descriptor } from '../protocol/registry.ts';
 import { assertNever, type Value } from '../protocol/valuetypes.ts';
-import type { ShortMessage } from '../protocol/midi.ts';
+import { channelOf, type ShortMessage } from '../protocol/midi.ts';
 
 export interface DecodeResult {
   path: string;
@@ -17,7 +17,7 @@ type RxEntry = {
 /** 14-bit reassembly buffer */
 export type Pair = Record<string, { msb: number; lsb: number }>;
 
-const keyOf = (status: number, ctrl: number): number => ((status & 0x0f) << 8) | ctrl;
+const keyOf = (status: number, ctrl: number): number => (channelOf(status) << 8) | ctrl;
 
 /** Reverse index for live decode */
 export const RX = new Map<number, RxEntry>();
