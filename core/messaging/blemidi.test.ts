@@ -38,26 +38,53 @@ describe('BLE-MIDI', () => {
       );
     });
 
-    it('drops both SysEx when one starts before the other ends, and resyncs after', () => {
+    it('keeps both SysEx when one starts before the other ends', () => {
       const decoder = new BleMidiDecoder();
-      const decode = (packets: Uint8Array[]) => packets.flatMap((packet) => decoder.decodePacket(packet));
-
-      assert.deepEqual(decode(orphanedMeterFrameStart), []);
+      const messages = interleavedMeterFrames.flatMap((packet) => decoder.decodePacket(packet));
       assert.deepEqual(
-        decode(interleavedMeterFrames).map(({ type, bytes }) => [type, ...bytes]),
+        messages.map(({ type, bytes }) => [type, ...(type === 'sysex' ? [bytes.length] : bytes)]),
         [
+          ['sysex', 58],
           ['midi', 0xb6, 0x4e, 0x00],
           ['midi', 0xb7, 0x4e, 0x64],
           ['midi', 0xb6, 0x4e, 0x00],
           ['midi', 0xb7, 0x4e, 0x64],
+          ['sysex', 58],
         ],
       );
+    });
+
+    it('assembles interleaved SysEx by header byte, following a header that ticks over', () => {
+      const decoder = new BleMidiDecoder();
+      const messages = [
+        [0x97, 0x80, 0xf0, 0x52, 0x11],
+        [0xc6, 0x80, 0xf0, 0x52, 0x22],
+        [0x98, 0x11, 0x11],
+        [0xc6, 0x22, 0x22],
+        [0x98, 0x11, 0x80, 0xf7],
+        [0xc6, 0x22, 0x80, 0xf7],
+      ].flatMap((packet) => decoder.decodePacket(Uint8Array.from(packet)));
       assert.deepEqual(
-        decode(ccsInsideMeterFrame)
-          .filter(({ type }) => type === 'sysex')
-          .map(({ bytes }) => bytes.length),
-        [58],
+        messages.map(({ bytes }) => [...bytes]),
+        [
+          [0xf0, 0x52, 0x11, 0x11, 0x11, 0x11, 0xf7],
+          [0xf0, 0x52, 0x22, 0x22, 0x22, 0x22, 0xf7],
+        ],
       );
+    });
+
+    it('drops a SysEx whose end never comes once two more start, and resyncs after', () => {
+      const decoder = new BleMidiDecoder();
+      const decode = (packets: Uint8Array[]) =>
+        packets
+          .flatMap((packet) => decoder.decodePacket(packet))
+          .filter(({ type }) => type === 'sysex')
+          .map(({ bytes }) => bytes.length);
+
+      // The 2nd frame's start is the last of it in the capture
+      assert.deepEqual(decode(orphanedMeterFrameStart), [58]);
+      assert.deepEqual(decode(interleavedMeterFrames), [58, 58]);
+      assert.deepEqual(decode(ccsInsideMeterFrame), [58]);
     });
   });
 

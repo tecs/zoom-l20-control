@@ -15,20 +15,29 @@ const TIMESTAMP_LOW_MASK = 0x7f;
 const headerByte = (ts: number): number => STATUS_BIT | ((ts >> TIMESTAMP_LOW_BITS) & TIMESTAMP_HIGH_MASK);
 const timestampByte = (ts: number): number => STATUS_BIT | (ts & TIMESTAMP_LOW_MASK);
 
+/** A SysEx spanning packets, tracked by the header byte of its latest packet */
+type OpenSysex = { header: number; bytes: number[] };
+
+const MAX_OPEN_SYSEX = 2;
+
+const headerTicks = (from: number, to: number): number => (to - from) & TIMESTAMP_HIGH_MASK;
+
 export class BleMidiDecoder {
+  private header = 0;
   private bytes: number[] = [];
-  private sysexBuffer: number[] = [];
-  private discarding = false;
+  private openSysex: OpenSysex[] = [];
 
   decodePacket(packet: Uint8Array): MidiMessage[] {
-    // Drop the header byte
-    this.bytes = Array.from(packet.subarray(1));
+    const [header = 0, ...bytes] = packet;
+    this.header = header;
+    this.bytes = bytes;
     const messages: MidiMessage[] = [];
 
-    // SysEx can span multiple packets - continue parsing if buffer has data
+    // A continuation of an open SysEx
     const [first, second] = this.bytes;
-    if (this.sysexOpen() && first !== undefined && (!isStatus(first) || second === SYSEX_END)) {
-      const message = this.consumeSysex();
+    const sysex = this.continuedSysex();
+    if (sysex && first !== undefined && (!isStatus(first) || second === SYSEX_END)) {
+      const message = this.consumeSysex(sysex);
       if (message) {
         messages.push(message);
       }
@@ -44,8 +53,15 @@ export class BleMidiDecoder {
     return messages;
   }
 
-  private sysexOpen(): boolean {
-    return this.sysexBuffer.length > 0 || this.discarding;
+  /** The open SysEx this packet continues */
+  private continuedSysex(): OpenSysex | undefined {
+    let closest: OpenSysex | undefined;
+    for (const sysex of this.openSysex) {
+      if (!closest || headerTicks(sysex.header, this.header) < headerTicks(closest.header, this.header)) {
+        closest = sysex;
+      }
+    }
+    return closest;
   }
 
   private consumeMessage(): MidiMessage | null {
@@ -71,36 +87,28 @@ export class BleMidiDecoder {
     }
 
     if (this.bytes[0] === SYSEX_START) {
-      // A SysEx starting while another is open
-      if (this.sysexOpen()) {
-        this.sysexBuffer = [];
-        this.discarding = true;
+      const sysex: OpenSysex = { header: this.header, bytes: [] };
+      this.openSysex.push(sysex);
+      if (this.openSysex.length > MAX_OPEN_SYSEX) {
+        this.openSysex.shift();
       }
-      return this.consumeSysex();
+      return this.consumeSysex(sysex);
     }
     return this.consumeShortMessage();
   }
 
-  private consumeSysex(): MidiMessage | null {
+  private consumeSysex(sysex: OpenSysex): MidiMessage | null {
+    sysex.header = this.header;
     while (this.bytes.length > 0) {
       const byte = this.bytes.shift() as number;
 
       if (byte === SYSEX_END) {
-        const bytes = Uint8Array.from(this.sysexBuffer.concat(byte));
-        this.sysexBuffer = [];
-        if (this.discarding) {
-          this.discarding = false;
-          return null;
-        }
-        return { type: 'sysex', bytes };
+        this.openSysex = this.openSysex.filter((open) => open !== sysex);
+        return { type: 'sysex', bytes: Uint8Array.from(sysex.bytes.concat(byte)) };
       }
 
-      if (this.discarding) {
-        continue;
-      }
-
-      if (!isStatus(byte) || (byte === SYSEX_START && this.sysexBuffer.length === 0)) {
-        this.sysexBuffer.push(byte);
+      if (!isStatus(byte) || (byte === SYSEX_START && sysex.bytes.length === 0)) {
+        sysex.bytes.push(byte);
       }
     }
 
