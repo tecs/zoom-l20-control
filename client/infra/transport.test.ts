@@ -199,6 +199,22 @@ describe('BluetoothTransport', () => {
     });
   });
 
+  describe('checkSetup()', () => {
+    withFakeBluetoothIt('finds no problem with Web Bluetooth and an adapter', async () => {
+      assert.equal(await transport.checkSetup(), null);
+    });
+
+    withFakeBluetoothIt('returns a hint without Web Bluetooth', async ({ removeApi }) => {
+      removeApi();
+      assert.match((await transport.checkSetup()) ?? '', /^Web Bluetooth unavailable\. /);
+    });
+
+    withFakeBluetoothIt('returns a hint without an adapter', async ({ turnAdapterOff }) => {
+      turnAdapterOff();
+      assert.match((await transport.checkSetup()) ?? '', /^No Bluetooth adapter available\. /);
+    });
+  });
+
   describe('connect()', () => {
     withFakeBluetoothIt('rejects with a hint, never connecting, without Web Bluetooth', async ({ removeApi }) => {
       const seen: TransportStatus[] = [];

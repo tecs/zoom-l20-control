@@ -74,6 +74,24 @@ button {
   word-break: break-word;
 }
 
+.setup-body {
+  max-width: 480px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.setup-body p {
+  margin: 0 0 8px;
+}
+
+.setup-problem {
+  background: #22262d;
+  border: 1px solid #333;
+  border-radius: 4px;
+  padding: 8px 10px;
+  word-break: break-word;
+}
+
 #status {
   margin-left: 8px;
   color: #9aa;

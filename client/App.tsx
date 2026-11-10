@@ -13,6 +13,7 @@ import { Transport } from './sections/Transport.tsx';
 import { Settings as SettingsSection } from './sections/Settings.tsx';
 import { LogPane } from './sections/LogPane.tsx';
 import { ErrorModal } from './sections/ErrorModal.tsx';
+import { SetupModal } from './sections/SetupModal.tsx';
 import { TRANSPORT_STATUS } from './infra/transport.ts';
 import { assertNever } from '../core/protocol/valuetypes.ts';
 
@@ -25,9 +26,14 @@ export function App() {
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [errors, setErrors] = createSignal<string[]>([]);
   const [errorOpen, setErrorOpen] = createSignal(false);
+  const [setupDismissed, setSetupDismissed] = createSignal(false);
 
   const status = observed(
     () => session.status,
+    (notify) => session.subscribe(notify),
+  );
+  const setupProblem = observed(
+    () => session.setupProblem,
     (notify) => session.subscribe(notify),
   );
   const debugOn = observed(
@@ -106,6 +112,11 @@ export function App() {
       <ChannelDetail open={detailOpen} onClose={() => setDetailOpen(null)} />
       <FxDetail open={fxOpen} onClose={() => setFxOpen(null)} />
       <SettingsSection open={settingsOpen} onClose={() => setSettingsOpen(false)} />
+      <SetupModal
+        problem={setupProblem}
+        open={() => setupProblem() !== null && !setupDismissed()}
+        onClose={() => setSetupDismissed(true)}
+      />
       <ErrorModal
         errors={errors}
         open={errorOpen}

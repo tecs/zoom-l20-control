@@ -144,6 +144,34 @@ describe('Session', () => {
     });
   });
 
+  describe('autoConnect()', () => {
+    it('publishes a setup problem as a warning instead of connecting', async () => {
+      const { session, transport, log } = setup();
+      const seen: [TransportStatus, string | null][] = [];
+      session.subscribe((status, setupProblem) => seen.push([status, setupProblem]));
+      transport.checkSetup.mock.mockImplementationOnce(async () => 'Web Bluetooth unavailable.');
+      session.autoConnect();
+      await flush();
+      assert.equal(session.setupProblem, 'Web Bluetooth unavailable.');
+      assert.deepEqual(seen, [[TRANSPORT_STATUS.DISCONNECTED, 'Web Bluetooth unavailable.']]);
+      assert.deepEqual(
+        log.entries('warn').map(({ text, kind }) => [text, kind]),
+        [['Web Bluetooth unavailable.', 'status']],
+      );
+      assert.deepEqual(log.entries('error'), []);
+      assert.equal(transport.autoConnect.mock.callCount(), 0);
+    });
+
+    it('connects quietly when the setup is fine', async () => {
+      const { session, transport, log } = setup();
+      session.autoConnect();
+      await flush();
+      assert.equal(session.setupProblem, null);
+      assert.deepEqual(log.entries('warn'), []);
+      assert.equal(transport.autoConnect.mock.callCount(), 1);
+    });
+  });
+
   describe('toggleConnection()', () => {
     it('connects when disconnected and disconnects when connected', async () => {
       const { session, transport } = setup();

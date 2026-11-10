@@ -35,6 +35,7 @@ export interface Transport {
   onError(handler: ErrorHandler): void;
   onMessage(handler: MessageHandler): void;
   onStatus(handler: StatusHandler): void;
+  checkSetup(): Promise<string | null>;
   connect(): Promise<void>;
   autoConnect(): Promise<boolean>;
   disconnect(): void;
@@ -87,20 +88,18 @@ export class BluetoothTransport implements Transport {
     this.statusHandler = handler;
   }
 
+  async checkSetup(): Promise<string | null> {
+    try {
+      await this.requireBluetooth();
+      return null;
+    } catch (error) {
+      return describeError(error);
+    }
+  }
+
   /** Manual connect via UI chooser (needs a user gesture) */
   async connect(): Promise<void> {
-    // Wrong browser, insecure context or the API is switched off
-    const webBluetooth = bluetooth();
-    if (!webBluetooth) {
-      this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
-      throw new Error(bluetoothUnavailableHint(platform()));
-    }
-
-    const adapterAvailable = await webBluetooth.getAvailability?.();
-    if (!adapterAvailable) {
-      this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
-      throw new Error(adapterNotFoundHint(platform()));
-    }
+    const webBluetooth = await this.requireBluetooth();
 
     this.setStatus(TRANSPORT_STATUS.CONNECTING);
     try {
@@ -241,6 +240,22 @@ export class BluetoothTransport implements Transport {
     for (const message of this.decoder.decodePacket(packet)) {
       this.messageHandler?.(message);
     }
+  }
+
+  private async requireBluetooth(): Promise<NonNullable<ReturnType<typeof bluetooth>>> {
+    // Wrong browser, insecure context or the API is switched off
+    const webBluetooth = bluetooth();
+    if (!webBluetooth) {
+      this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
+      throw new Error(bluetoothUnavailableHint(platform()));
+    }
+
+    const adapterAvailable = await webBluetooth.getAvailability?.();
+    if (!adapterAvailable) {
+      this.setStatus(TRANSPORT_STATUS.DISCONNECTED);
+      throw new Error(adapterNotFoundHint(platform()));
+    }
+    return webBluetooth;
   }
 
   private setStatus(status: TransportStatus): void {

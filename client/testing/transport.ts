@@ -15,6 +15,7 @@ export function fakeTransport() {
   const transport = {
     sent,
     sysex,
+    checkSetup: mock.fn(async (): Promise<string | null> => null),
     connect: mock.fn(async (): Promise<void> => {}),
     autoConnect: mock.fn(async (): Promise<boolean> => true),
     disconnect: mock.fn((): void => {}),

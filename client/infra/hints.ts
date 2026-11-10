@@ -41,13 +41,13 @@ export function bluetoothUnavailableHint(platform: Platform): string {
 
 export function adapterNotFoundHint({ ios, linux }: Platform): string {
   if (linux) {
-    return 'No Bluetooth adapter available. Start BlueZ (sudo systemctl enable --now bluetooth) and unblock the adapter (rfkill unblock bluetooth), then retry.';
+    return 'No Bluetooth adapter available. Start BlueZ (sudo systemctl enable --now bluetooth) and unblock the adapter (rfkill unblock bluetooth), then connect.';
   }
   if (ios) {
     // Bluefy can't tell the two apart: getAvailability() is false for both
-    return 'No Bluetooth adapter available. Turn Bluetooth on, and allow it for this browser in Settings > Privacy & Security > Bluetooth, then retry.';
+    return 'No Bluetooth adapter available. Turn Bluetooth on, and allow it for this browser in Settings > Privacy & Security > Bluetooth, then connect.';
   }
-  return 'No Bluetooth adapter available. Turn Bluetooth on, then retry.';
+  return 'No Bluetooth adapter available. Turn Bluetooth on, then connect.';
 }
 
 export function writeErrorHint({ linux }: Platform): string | null {

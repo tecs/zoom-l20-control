@@ -33,7 +33,7 @@ export interface SessionDependencies {
   transportState: TransportState;
 }
 
-export class Session extends Publisher<[status: TransportStatus]> {
+export class Session extends Publisher<[status: TransportStatus, setupProblem: string | null]> {
   private transport: Transport;
   private log: Log;
   private wakeLock: Lock;
@@ -43,6 +43,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
   private transportState: TransportState;
 
   private currentStatus: TransportStatus = TRANSPORT_STATUS.DISCONNECTED;
+  private currentSetupProblem: string | null = null;
   private selectedMix = 0;
   /** 14-bit reassembly for TX logging */
   private txPair: Pair = {};
@@ -67,6 +68,10 @@ export class Session extends Publisher<[status: TransportStatus]> {
     return this.currentStatus;
   }
 
+  get setupProblem(): string | null {
+    return this.currentSetupProblem;
+  }
+
   get mix(): number {
     return this.selectedMix;
   }
@@ -78,7 +83,15 @@ export class Session extends Publisher<[status: TransportStatus]> {
 
   /** Reconnects to the last mixer, without the chooser */
   autoConnect(): void {
-    void this.transport.autoConnect();
+    void this.transport.checkSetup().then((problem) => {
+      if (problem) {
+        this.currentSetupProblem = problem;
+        this.log.warn(problem, 'status');
+        this.emit(this.currentStatus, problem);
+        return;
+      }
+      void this.transport.autoConnect();
+    });
   }
 
   toggleConnection(): void {
@@ -136,7 +149,7 @@ export class Session extends Publisher<[status: TransportStatus]> {
 
   private async onStatus(status: TransportStatus): Promise<void> {
     this.currentStatus = status;
-    this.emit(status);
+    this.emit(status, this.currentSetupProblem);
     this.log.info(`* ${status}`, 'status');
 
     if (status === TRANSPORT_STATUS.CONNECTED) {
