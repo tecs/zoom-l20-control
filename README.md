@@ -4,6 +4,8 @@ A web app that controls a **Zoom LiveTrak L-20** digital mixer equipped with a *
 
 This is an open-source alternative to Zoom's own **L-20 Control App** iPad app.
 
+**Hosted live at <https://tecs.github.io/zoom-l20-control/>** (see [Requirements](#requirements))
+
 > Not affiliated with or endorsed by the Zoom Corporation.
 > This project contains no code or assets from Zoom's app.
 
