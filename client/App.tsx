@@ -23,6 +23,7 @@ export function App() {
   const [mix, setMix] = createSignal(session.mix);
   const [detailOpen, setDetailOpen] = createSignal<number | null>(null);
   const [fxOpen, setFxOpen] = createSignal<number | null>(null);
+  const [geqOpen, setGeqOpen] = createSignal(false);
   const [settingsOpen, setSettingsOpen] = createSignal(false);
   const [errors, setErrors] = createSignal<string[]>([]);
   const [errorOpen, setErrorOpen] = createSignal(false);
@@ -107,15 +108,15 @@ export function App() {
       <div class="channels">
         <Strips mix={mix} openDetail={setDetailOpen} peaks={peaks} />
         <FxStrips mix={mix} openFx={setFxOpen} peaks={peaks} />
-        <MasterStrip peaks={peaks} />
+        <MasterStrip peaks={peaks} openGeq={() => setGeqOpen(true)} />
       </div>
-      <Geq />
       <Show when={debugOn()}>
         <LogPane onReread={() => session.reread()} />
       </Show>
 
       <ChannelDetail open={detailOpen} onClose={() => setDetailOpen(null)} />
       <FxDetail open={fxOpen} onClose={() => setFxOpen(null)} />
+      <Geq open={geqOpen} onClose={() => setGeqOpen(false)} />
       <SettingsSection open={settingsOpen} onClose={() => setSettingsOpen(false)} />
       <SetupModal
         problem={setupProblem}

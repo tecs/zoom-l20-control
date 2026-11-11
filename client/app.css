@@ -377,16 +377,13 @@ button {
 }
 
 #geq {
-  margin-top: 12px;
-  padding: 8px 0;
-  border-top: 1px solid #262a30;
+  max-width: min(720px, 100% - 32px);
 }
 
 .geq-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
 }
 
 .geq-bands {
@@ -579,6 +576,12 @@ button {
 .strip .edit.edited {
   border-color: var(--warn);
   color: var(--warn);
+}
+
+.strip .geq.on {
+  background: #2d7d46;
+  border-color: #2d7d46;
+  color: #fff;
 }
 
 /* Detail / FX modals */

@@ -2,7 +2,7 @@ import type { ChannelMeter } from '../../core/messaging/meters.ts';
 import { P } from '../../core/protocol/registry.ts';
 import { formatValue } from '../../core/format.ts';
 import { defaultValue } from '../../core/protocol/meta.ts';
-import { fieldRW, meterFrame } from '../bridge.ts';
+import { fieldRW, meterFrame, modified } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import { Meter, type Peaks } from '../components/Meter.tsx';
 import { Fader } from '../components/Fader.tsx';
@@ -11,6 +11,7 @@ import { makeRecButton } from '../components/Control.tsx';
 
 type MasterStripProps = {
   peaks: Peaks;
+  openGeq: () => void;
 };
 
 export function MasterStrip(props: MasterStripProps) {
@@ -19,6 +20,7 @@ export function MasterStrip(props: MasterStripProps) {
   const [level, setLevel] = fieldRW<number>(store, P.master.level);
   const [muted, setMuted] = fieldRW<boolean>(store, P.master.mute);
   const recButton = makeRecButton(store, P.master.rec);
+  const geqOn = modified(store, [P.geq.on]);
 
   const meter = (): ChannelMeter | undefined => {
     const current = frame();
@@ -43,6 +45,15 @@ export function MasterStrip(props: MasterStripProps) {
       <div class="strip-readout">{formatValue(P.master.level, value(), true)}</div>
       <Toggle active={muted} onClick={() => setMuted(!muted())} label="M" />
       {recButton}
+      <button
+        type="button"
+        class="geq"
+        classList={{ on: geqOn() }}
+        title={geqOn() ? 'Graphic EQ (on)' : 'Graphic EQ (off)'}
+        onClick={() => props.openGeq()}
+      >
+        GEQ
+      </button>
     </div>
   );
 }

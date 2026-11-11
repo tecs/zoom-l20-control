@@ -1,4 +1,4 @@
-import { For, type Accessor } from 'solid-js';
+import { For, createEffect, type Accessor } from 'solid-js';
 import { EQ_GAIN_FLAT, LAYOUT, P, rangeOf } from '../../core/protocol/registry.ts';
 import { GEQ_FREQS, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
@@ -9,6 +9,11 @@ type BandSliderProps = {
   path: string;
   label: string;
   rw: [Accessor<number | undefined>, (value: number) => void];
+};
+
+type GeqProps = {
+  open: Accessor<boolean>;
+  onClose: () => void;
 };
 
 function OnToggle() {
@@ -40,8 +45,9 @@ function BandSlider(props: BandSliderProps) {
   );
 }
 
-export function Geq() {
+export function Geq(props: GeqProps) {
   const { store } = useApp();
+  let dialogEl!: HTMLDialogElement;
   const bands = LAYOUT.geqBands.map((n) => fieldRW<number>(store, P.geq.band(n)));
   const flat = (): void => {
     for (const [, set] of bands) {
@@ -49,18 +55,33 @@ export function Geq() {
     }
   };
 
+  createEffect(() => {
+    if (!props.open()) {
+      if (dialogEl.open) {
+        dialogEl.close();
+      }
+    } else if (!dialogEl.open) {
+      dialogEl.showModal();
+    }
+  });
+
   return (
-    <div id="geq">
-      <div class="geq-head">
-        <span class="out-title">Graphic EQ</span>
-        <OnToggle />
-        <button type="button" onClick={flat}>
-          Flat
+    <dialog class="modal" id="geq" ref={dialogEl} onClose={() => props.onClose()}>
+      <div class="detail-head">
+        <div class="geq-head">
+          <strong>Graphic EQ</strong>
+          <OnToggle />
+          <button type="button" onClick={flat}>
+            Flat
+          </button>
+        </div>
+        <button type="button" onClick={() => props.onClose()}>
+          Close
         </button>
       </div>
       <div class="geq-bands">
         <For each={bands}>{(rw, n) => <BandSlider path={P.geq.band(n())} label={GEQ_FREQS[n()] ?? ''} rw={rw} />}</For>
       </div>
-    </div>
+    </dialog>
   );
 }
