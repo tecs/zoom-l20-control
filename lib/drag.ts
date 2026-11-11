@@ -11,6 +11,9 @@ export interface DragOptions {
 
 export const clamp = (value: number, { min, max }: Range): number => Math.min(max, Math.max(min, value));
 
+export const stepValue = (value: number, steps: number, range: Range): number =>
+  clamp(Math.round(value) + steps, range);
+
 export class ValueDrag {
   private readonly range: Range;
   private readonly perPx: number;

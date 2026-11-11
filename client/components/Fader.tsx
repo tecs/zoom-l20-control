@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js';
 import { rangeOf } from '../../core/protocol/registry.ts';
 import { defaultValue } from '../../core/protocol/meta.ts';
-import { ValueDrag } from '../../lib/drag.ts';
+import { ValueDrag, stepValue } from '../../lib/drag.ts';
 
 type FaderProps = {
   path: Accessor<string>;
@@ -76,6 +76,15 @@ export function Fader(props: FaderProps) {
     }
   };
 
+  const onWheel: JSX.EventHandler<HTMLDivElement, WheelEvent> = (event) => {
+    // Only if focused, otherwise scrolling the page can accidentally move a fader
+    if (document.activeElement !== event.currentTarget || event.deltaY === 0) {
+      return;
+    }
+    event.preventDefault();
+    set(stepValue(props.value(), -Math.sign(event.deltaY), range()));
+  };
+
   return (
     <div
       class="fader"
@@ -91,6 +100,7 @@ export function Fader(props: FaderProps) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => (press = undefined)}
+      onWheel={onWheel}
     >
       <div class="fader-track" />
       <div class="fader-thumb" style={{ bottom: `${percent()}%` }} />
