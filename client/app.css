@@ -161,6 +161,11 @@ button {
   padding: 3px 8px;
 }
 
+#errorsBtn {
+  border-color: var(--bad);
+  color: var(--bad);
+}
+
 .setting-row {
   display: flex;
   align-items: center;

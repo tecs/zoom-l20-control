@@ -93,6 +93,11 @@ export function App() {
         <button type="button" id="settingsBtn" title="Settings" onClick={() => setSettingsOpen(true)}>
           ⚙
         </button>
+        <Show when={errors().length > 0}>
+          <button type="button" id="errorsBtn" title="Show errors" onClick={() => setErrorOpen(true)}>
+            ⚠ {errors().length}
+          </button>
+        </Show>
       </div>
 
       <Scenes press={(index) => session.pressScene(index)} />
