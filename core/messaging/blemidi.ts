@@ -57,7 +57,7 @@ export class BleMidiDecoder {
   private continuedSysex(): OpenSysex | undefined {
     let closest: OpenSysex | undefined;
     for (const sysex of this.openSysex) {
-      if (!closest || headerTicks(sysex.header, this.header) < headerTicks(closest.header, this.header)) {
+      if (!closest || headerTicks(sysex.header, this.header) <= headerTicks(closest.header, this.header)) {
         closest = sysex;
       }
     }

@@ -73,6 +73,19 @@ describe('BLE-MIDI', () => {
       );
     });
 
+    it('gives a header tie to the newest SysEx, not one left open since before the header wrapped', () => {
+      const decoder = new BleMidiDecoder();
+      const messages = [
+        [0x80, 0x80, 0xf0, 0x52, 0x11],
+        [0x80, 0x80, 0xf0, 0x52, 0x22],
+        [0x80, 0x22, 0x80, 0xf7],
+      ].flatMap((packet) => decoder.decodePacket(Uint8Array.from(packet)));
+      assert.deepEqual(
+        messages.map(({ bytes }) => [...bytes]),
+        [[0xf0, 0x52, 0x22, 0x22, 0xf7]],
+      );
+    });
+
     it('drops a SysEx whose end never comes once two more start, and resyncs after', () => {
       const decoder = new BleMidiDecoder();
       const decode = (packets: Uint8Array[]) =>
