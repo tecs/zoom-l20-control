@@ -1,5 +1,6 @@
 import type { Accessor, JSX } from 'solid-js';
 import { rangeOf } from '../../core/protocol/registry.ts';
+import { defaultValue } from '../../core/protocol/meta.ts';
 import { ValueDrag } from '../../lib/drag.ts';
 
 type FaderProps = {
@@ -11,10 +12,16 @@ type FaderProps = {
 };
 
 type PointerHandler = JSX.EventHandler<HTMLDivElement, PointerEvent>;
+
+/** Max tap pointer travel */
+const TAP_PX = 4;
+const DOUBLE_TAP_MS = 300;
+
 type Press = { x: number; y: number; drag: ValueDrag | undefined };
 
 export function Fader(props: FaderProps) {
   let press: Press | undefined;
+  let lastTapAt = -Infinity;
 
   const range = () => rangeOf(props.path());
   const percent = (): number => {
@@ -45,8 +52,28 @@ export function Fader(props: FaderProps) {
     if (!press) {
       return;
     }
-    press.drag ??= startDrag(event, event.currentTarget.clientHeight);
+    if (!press.drag) {
+      if (Math.hypot(event.clientX - press.x, event.clientY - press.y) <= TAP_PX) {
+        return;
+      }
+      press.drag = startDrag(event, event.currentTarget.clientHeight);
+    }
     set(press.drag.move(-event.clientY));
+  };
+
+  const onPointerUp: PointerHandler = (event) => {
+    const tap = press && !press.drag;
+    press = undefined;
+    if (!tap) {
+      return;
+    }
+    // Reset to default on double tap
+    if (event.timeStamp - lastTapAt < DOUBLE_TAP_MS) {
+      lastTapAt = -Infinity;
+      set(defaultValue(props.path()));
+    } else {
+      lastTapAt = event.timeStamp;
+    }
   };
 
   return (
@@ -62,7 +89,7 @@ export function Fader(props: FaderProps) {
       aria-valuetext={props.valueText()}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={() => (press = undefined)}
+      onPointerUp={onPointerUp}
       onPointerCancel={() => (press = undefined)}
     >
       <div class="fader-track" />
