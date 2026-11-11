@@ -40,12 +40,12 @@ export class ValueDrag {
     this.position = position;
   }
 
-  move(position: number): number {
+  move(position: number, scale = 1): number {
     const px = position - this.position;
     this.position = position;
 
     const from = this.exact;
-    const to = clamp(from + px * this.perPx, this.range);
+    const to = clamp(from + px * this.perPx * scale, this.range);
 
     this.exact = to;
 
@@ -53,6 +53,6 @@ export class ValueDrag {
   }
 
   get value(): number {
-    return this.exact;
+    return Math.round(this.exact);
   }
 }

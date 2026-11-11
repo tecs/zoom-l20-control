@@ -13,6 +13,7 @@ type FaderProps = {
 
 type PointerHandler = JSX.EventHandler<HTMLDivElement, PointerEvent>;
 
+const FINE_SCALE = 12;
 /** Max tap pointer travel */
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;
@@ -58,7 +59,8 @@ export function Fader(props: FaderProps) {
       }
       press.drag = startDrag(event, event.currentTarget.clientHeight);
     }
-    set(press.drag.move(-event.clientY));
+    const scale = event.shiftKey ? FINE_SCALE : 1;
+    set(press.drag.move(-event.clientY, scale));
   };
 
   const onPointerUp: PointerHandler = (event) => {

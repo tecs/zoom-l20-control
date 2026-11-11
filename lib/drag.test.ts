@@ -23,6 +23,32 @@ describe('ValueDrag', () => {
     assert.equal(drag.move(590), 95);
   });
 
+  it('moves slower by the given scale', () => {
+    const drag = new ValueDrag(40, 500, range, { travel });
+    assert.equal(drag.move(520, 0.1), 41);
+  });
+
+  it('applies a scale change from that move on, without a jump', () => {
+    const drag = new ValueDrag(40, 500, range, { travel });
+    assert.equal(drag.move(520), 50);
+    assert.equal(drag.move(540, 0.1), 51);
+    assert.equal(drag.move(560), 61);
+  });
+
+  it('adds up moves too small to change the value on their own', () => {
+    const drag = new ValueDrag(40, 500, range, { travel });
+    for (let position = 501; position <= 520; position++) {
+      drag.move(position, 0.1);
+    }
+    assert.equal(drag.value, 41);
+  });
+
+  it('clamps a start value outside the range', () => {
+    const drag = new ValueDrag(120, 500, range, { travel });
+    assert.equal(drag.move(490), 95);
+  });
+});
+
 describe('keySteps()', () => {
   it('raises on up and right, lowers on down and left', () => {
     assert.deepEqual(['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].map(keySteps), [1, 1, -1, -1]);
