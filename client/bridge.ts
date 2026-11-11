@@ -21,16 +21,29 @@ export function field<T extends Value = Value>(store: Store, path: Path<T>): Acc
   return get;
 }
 
+/** How long after the last local change the desk's echoes are held back */
+const ECHO_HOLD_MS = 300;
+
 /** Read/write field. Updates optimistically and dispatches the intent. Undefined until the first dump. */
 export function fieldRW<T extends Value = Value>(
   store: Store,
   path: Path<T>,
 ): [Accessor<T | undefined>, (value: T) => void] {
   const [get, sig] = createSignal<T | undefined>(store.get(path) as T | undefined);
-  onCleanup(reconcile(store, path, () => sig(() => store.get(path) as T | undefined)));
+  const apply = (): void => void sig(() => store.get(path) as T | undefined);
+  let hold: ReturnType<typeof setTimeout> | undefined;
+
+  onCleanup(reconcile(store, path, () => hold === undefined && apply()));
+  onCleanup(() => clearTimeout(hold));
+
   const set = (value: T): void => {
     sig(() => value);
     store.dispatch(path, value);
+    clearTimeout(hold);
+    hold = setTimeout(() => {
+      hold = undefined;
+      apply();
+    }, ECHO_HOLD_MS);
   };
   return [get, set];
 }

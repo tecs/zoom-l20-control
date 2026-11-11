@@ -1,4 +1,4 @@
-import { describe } from 'node:test';
+import { afterEach, beforeEach, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { Store } from '../core/state/store.ts';
 import { MeterStore } from '../core/state/meters.ts';
@@ -39,6 +39,48 @@ describe('Store <> Solid signal bridge', () => {
       assert.equal(muted(), true);
       assert.equal(store.get(P.strip(0).mute), true);
       assert.equal(otherBinding(), undefined);
+    });
+
+    describe('while the user is changing it', () => {
+      beforeEach(() => mock.timers.enable({ apis: ['setTimeout'] }));
+      afterEach(() => mock.timers.reset());
+
+      const echo = (store: Store, value: number) => store.applyMessage({ status: 0xb0, d1: 0x3c, d2: value });
+
+      inRootIt('holds back a remote change, then applies the latest one', () => {
+        const store = new Store();
+        const [level, setLevel] = fieldRW<number>(store, P.strip(0).send(0));
+
+        setLevel(90);
+        echo(store, 80);
+        echo(store, 85);
+        assert.equal(level(), 90);
+
+        mock.timers.tick(300);
+        assert.equal(level(), 85);
+      });
+
+      inRootIt('restarts the hold on each change', () => {
+        const store = new Store();
+        const [level, setLevel] = fieldRW<number>(store, P.strip(0).send(0));
+
+        setLevel(90);
+        mock.timers.tick(200);
+        setLevel(95);
+        echo(store, 90);
+        mock.timers.tick(200);
+        assert.equal(level(), 95);
+      });
+
+      inRootIt('applies remote changes at once after the hold', () => {
+        const store = new Store();
+        const [level, setLevel] = fieldRW<number>(store, P.strip(0).send(0));
+
+        setLevel(90);
+        mock.timers.tick(300);
+        echo(store, 70);
+        assert.equal(level(), 70);
+      });
     });
   });
 
