@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ValueDrag, keySteps, stepValue } from './drag.ts';
+import { FINE_SCALE, ValueDrag, keySteps, sidewaysScale, stepValue } from './drag.ts';
 
 const range = { min: 0, max: 100 };
 const travel = 200;
@@ -56,6 +56,22 @@ describe('keySteps()', () => {
 
   it('ignores other keys', () => {
     assert.equal(keySteps('Home'), 0);
+  });
+});
+
+describe('sidewaysScale()', () => {
+  it('keeps full speed close to the axis, on either side', () => {
+    assert.equal(sidewaysScale(30), 1);
+    assert.equal(sidewaysScale(-30), 1);
+  });
+
+  it('slows down further away', () => {
+    assert.equal(sidewaysScale(60), 0.5);
+    assert.equal(sidewaysScale(-120), 0.25);
+  });
+
+  it('never goes below the fine scale', () => {
+    assert.equal(sidewaysScale(1000), FINE_SCALE);
   });
 });
 

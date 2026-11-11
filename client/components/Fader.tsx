@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js';
 import { rangeOf } from '../../core/protocol/registry.ts';
 import { defaultValue } from '../../core/protocol/meta.ts';
-import { ValueDrag, keySteps, stepValue } from '../../lib/drag.ts';
+import { FINE_SCALE, ValueDrag, keySteps, sidewaysScale, stepValue } from '../../lib/drag.ts';
 
 type FaderProps = {
   path: Accessor<string>;
@@ -13,7 +13,6 @@ type FaderProps = {
 
 type PointerHandler = JSX.EventHandler<HTMLDivElement, PointerEvent>;
 
-const FINE_SCALE = 12;
 /** Max tap pointer travel */
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;
@@ -59,7 +58,7 @@ export function Fader(props: FaderProps) {
       }
       press.drag = startDrag(event, event.currentTarget.clientHeight);
     }
-    const scale = event.shiftKey ? FINE_SCALE : 1;
+    const scale = event.shiftKey ? FINE_SCALE : sidewaysScale(event.clientX - press.x);
     set(press.drag.move(-event.clientY, scale));
   };
 
