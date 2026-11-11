@@ -480,11 +480,68 @@ button {
   transition-timing-function: ease-out;
 }
 
-.strip input[type='range'] {
-  -webkit-appearance: slider-vertical;
-  appearance: slider-vertical;
+.fader {
+  position: relative;
   width: 22px;
   height: 120px;
+  touch-action: none;
+  user-select: none;
+  cursor: ns-resize;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.fader:focus-visible {
+  outline: 1px solid #666;
+  outline-offset: 2px;
+}
+
+.fader-track {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 4px;
+  transform: translateX(-50%);
+  background: #000;
+  border-radius: 2px;
+}
+
+.fader-thumb {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 2px;
+  margin-bottom: -1px;
+  background: #cfd3d8;
+  pointer-events: none;
+}
+
+.fader-thumb::after, .fader-thumb::before {
+  content: '';
+  display: block;
+  position: absolute;
+  width: calc(100% + 4px);
+  height: 10px;
+  left: -2px;
+  background: #555;
+  border-radius: 2px;
+}
+
+#fxstrips .fader-thumb::after, #fxstrips .fader-thumb::before {
+  background: #339;
+}
+
+.master .fader-thumb::after, .master .fader-thumb::before {
+  background: #933;
+}
+
+.fader-thumb::after {
+  top: 100%;
+}
+
+.fader-thumb::before {
+  bottom: 100%;
 }
 
 .strip button {

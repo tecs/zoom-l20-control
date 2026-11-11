@@ -1,6 +1,5 @@
 import type { Accessor } from 'solid-js';
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
-import { rangeOf } from '../../core/protocol/registry.ts';
 import { STRIP_NAMES, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import type { StripBindings } from '../bindings.ts';
@@ -25,15 +24,21 @@ export function ChannelStrip(props: ChannelStripProps) {
   };
 
   const setValue = (val: number): void => props.bindings.sends[props.mix()]?.[1](val);
-  const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
-  const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));
+  const path = (): string => props.bindings.send(props.mix());
+  const name = (): string => props.bindings.name() || (STRIP_NAMES[props.index] ?? '');
 
   return (
     <div classList={{ strip: true, stereo: props.stereo }}>
-      <div class="lbl">{props.bindings.name() || STRIP_NAMES[props.index]}</div>
+      <div class="lbl">{name()}</div>
       <Meter meter={props.meter} bars={props.stereo ? 4 : 2} peaks={props.peaks} />
-      <Fader value={value} onInput={setValue} min={range().min} max={range().max} />
-      <div class="strip-readout">{readout()}</div>
+      <Fader
+        path={path}
+        value={value}
+        onInput={setValue}
+        label={name()}
+        valueText={() => formatValue(path(), value())}
+      />
+      <div class="strip-readout">{formatValue(path(), value(), true)}</div>
       <Toggle
         active={props.bindings.mute[0]}
         onClick={() => props.bindings.mute[1](!props.bindings.mute[0]())}

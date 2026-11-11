@@ -1,5 +1,5 @@
 import { For, createEffect, type Accessor } from 'solid-js';
-import { LAYOUT, rangeOf } from '../../core/protocol/registry.ts';
+import { LAYOUT } from '../../core/protocol/registry.ts';
 import { FX_DESCRIPTIONS, fxKnob, fxKnobDefault, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
 import { FX_NAMES, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
@@ -50,16 +50,21 @@ function FxStrip(props: FxStripProps) {
     const mix = props.mix();
     return props.bindings.sends[mix]?.[0]() ?? defaultValue(props.bindings.send(mix));
   };
-  const readout = (): string => formatValue(props.bindings.send(props.mix()), value(), true);
   // Per-mix, so a monitor send with a different range would just work
-  const range = (): { min: number; max: number } => rangeOf(props.bindings.send(props.mix()));
+  const path = (): string => props.bindings.send(props.mix());
 
   return (
     <div class="strip fx">
       <div class="lbl">{FX_NAMES[props.index]}</div>
       <Meter meter={props.meter} bars={4} peaks={props.peaks} />
-      <Fader value={value} onInput={setValue} min={range().min} max={range().max} />
-      <div class="strip-readout">{readout()}</div>
+      <Fader
+        path={path}
+        value={value}
+        onInput={setValue}
+        label={FX_NAMES[props.index] ?? 'FX'}
+        valueText={() => formatValue(path(), value())}
+      />
+      <div class="strip-readout">{formatValue(path(), value(), true)}</div>
       <Toggle
         active={props.bindings.mute[0]}
         onClick={() => props.bindings.mute[1](!props.bindings.mute[0]())}
