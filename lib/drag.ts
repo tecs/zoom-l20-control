@@ -14,6 +14,19 @@ export const clamp = (value: number, { min, max }: Range): number => Math.min(ma
 export const stepValue = (value: number, steps: number, range: Range): number =>
   clamp(Math.round(value) + steps, range);
 
+export const keySteps = (key: string): number => {
+  switch (key) {
+    case 'ArrowUp':
+    case 'ArrowRight':
+      return 1;
+    case 'ArrowDown':
+    case 'ArrowLeft':
+      return -1;
+    default:
+      return 0;
+  }
+};
+
 export class ValueDrag {
   private readonly range: Range;
   private readonly perPx: number;

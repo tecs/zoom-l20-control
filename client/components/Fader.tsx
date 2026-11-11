@@ -1,7 +1,7 @@
 import type { Accessor, JSX } from 'solid-js';
 import { rangeOf } from '../../core/protocol/registry.ts';
 import { defaultValue } from '../../core/protocol/meta.ts';
-import { ValueDrag, stepValue } from '../../lib/drag.ts';
+import { ValueDrag, keySteps, stepValue } from '../../lib/drag.ts';
 
 type FaderProps = {
   path: Accessor<string>;
@@ -76,6 +76,14 @@ export function Fader(props: FaderProps) {
     }
   };
 
+  const onKeyDown: JSX.EventHandler<HTMLDivElement, KeyboardEvent> = (event) => {
+    const steps = keySteps(event.key);
+    if (steps !== 0) {
+      event.preventDefault();
+      set(stepValue(props.value(), steps, range()));
+    }
+  };
+
   const onWheel: JSX.EventHandler<HTMLDivElement, WheelEvent> = (event) => {
     // Only if focused, otherwise scrolling the page can accidentally move a fader
     if (document.activeElement !== event.currentTarget || event.deltaY === 0) {
@@ -100,6 +108,7 @@ export function Fader(props: FaderProps) {
       onPointerMove={onPointerMove}
       onPointerUp={onPointerUp}
       onPointerCancel={() => (press = undefined)}
+      onKeyDown={onKeyDown}
       onWheel={onWheel}
     >
       <div class="fader-track" />

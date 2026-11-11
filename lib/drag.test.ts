@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { ValueDrag, stepValue } from './drag.ts';
+import { ValueDrag, keySteps, stepValue } from './drag.ts';
 
 const range = { min: 0, max: 100 };
 const travel = 200;
@@ -22,6 +22,16 @@ describe('ValueDrag', () => {
     assert.equal(drag.move(600), 100);
     assert.equal(drag.move(590), 95);
   });
+
+describe('keySteps()', () => {
+  it('raises on up and right, lowers on down and left', () => {
+    assert.deepEqual(['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].map(keySteps), [1, 1, -1, -1]);
+  });
+
+  it('ignores other keys', () => {
+    assert.equal(keySteps('Home'), 0);
+  });
+});
 
 describe('stepValue()', () => {
   it('moves by whole steps', () => {
