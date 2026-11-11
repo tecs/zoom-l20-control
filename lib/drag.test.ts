@@ -43,6 +43,63 @@ describe('ValueDrag', () => {
     assert.equal(drag.value, 41);
   });
 
+  describe('with a detent', () => {
+    const snaps = { travel, snaps: [50], snapPx: 4 };
+
+    it('reaches the values next to it without catching', () => {
+      const drag = new ValueDrag(40, 500, range, snaps);
+      assert.equal(drag.move(518), 49);
+    });
+
+    it('holds the value for the detent travel once reached, then goes on', () => {
+      const drag = new ValueDrag(40, 500, range, snaps);
+      assert.equal(drag.move(520), 50);
+      assert.equal(drag.move(524), 50);
+      assert.equal(drag.move(526), 51);
+    });
+
+    it('catches when one move crosses it, and spends the rest of that move', () => {
+      const drag = new ValueDrag(40, 500, range, snaps);
+      assert.equal(drag.move(530), 53);
+    });
+
+    it('holds at each detent one move crosses, nearest first', () => {
+      const drag = new ValueDrag(40, 500, range, { ...snaps, snaps: [50, 45] });
+      assert.equal(drag.move(530), 51);
+    });
+
+    it('lets go backwards after the same travel', () => {
+      const drag = new ValueDrag(40, 500, range, snaps);
+      assert.equal(drag.move(520), 50);
+      assert.equal(drag.move(516), 50);
+      assert.equal(drag.move(514), 49);
+    });
+
+    it('catches again when the drag comes back to it', () => {
+      const drag = new ValueDrag(40, 500, range, snaps);
+      assert.equal(drag.move(530), 53);
+      assert.equal(drag.move(522), 50);
+    });
+
+    it('holds a drag that starts on it', () => {
+      const drag = new ValueDrag(50, 500, range, snaps);
+      assert.equal(drag.move(504), 50);
+      assert.equal(drag.move(506), 51);
+    });
+
+    it('does not catch in fine mode', () => {
+      const drag = new ValueDrag(49, 500, range, snaps);
+      assert.equal(drag.move(520, 0.1), 50);
+      assert.equal(drag.move(540, 0.1), 51);
+    });
+
+    it('lets go at once when fine mode starts', () => {
+      const drag = new ValueDrag(50, 500, range, snaps);
+      assert.equal(drag.move(498, 0.1), 50);
+      assert.equal(drag.move(480, 0.1), 49);
+    });
+  });
+
   it('clamps a start value outside the range', () => {
     const drag = new ValueDrag(120, 500, range, { travel });
     assert.equal(drag.move(490), 95);

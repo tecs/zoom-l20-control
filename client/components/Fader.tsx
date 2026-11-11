@@ -1,6 +1,6 @@
 import type { Accessor, JSX } from 'solid-js';
 import { rangeOf } from '../../core/protocol/registry.ts';
-import { defaultValue } from '../../core/protocol/meta.ts';
+import { defaultValue, metaFor } from '../../core/protocol/meta.ts';
 import { FINE_SCALE, ValueDrag, keySteps, sidewaysScale, stepValue } from '../../lib/drag.ts';
 
 type FaderProps = {
@@ -13,6 +13,8 @@ type FaderProps = {
 
 type PointerHandler = JSX.EventHandler<HTMLDivElement, PointerEvent>;
 
+/** Detent pointer travel */
+const SNAP_PX = 12;
 /** Max tap pointer travel */
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;
@@ -35,8 +37,14 @@ export function Fader(props: FaderProps) {
     }
   };
 
-  const startDrag = (event: PointerEvent, height: number): ValueDrag =>
-    new ValueDrag(props.value(), -event.clientY, range(), { travel: height });
+  const startDrag = (event: PointerEvent, height: number): ValueDrag => {
+    const unity = metaFor(props.path())?.unity;
+    return new ValueDrag(props.value(), -event.clientY, range(), {
+      travel: height,
+      snaps: unity === undefined ? [] : [unity],
+      snapPx: SNAP_PX,
+    });
+  };
 
   const onPointerDown: PointerHandler = (event) => {
     if (event.button !== 0) {
