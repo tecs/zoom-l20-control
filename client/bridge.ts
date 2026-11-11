@@ -5,6 +5,7 @@ import type { Store } from '../core/state/store.ts';
 import type { Value, Path } from '../core/protocol/valuetypes.ts';
 import type { MeterFrame } from '../core/messaging/meters.ts';
 import type { MeterStore } from '../core/state/meters.ts';
+import { defaultValue } from '../core/protocol/meta.ts';
 
 /** Reconcile the signal from the store on any non-local change to this path (or a bulk dump) */
 const reconcile = (store: Store, path: string, apply: () => void) =>
@@ -46,6 +47,23 @@ export function fieldRW<T extends Value = Value>(
     }, ECHO_HOLD_MS);
   };
   return [get, set];
+}
+
+/** True when any of the paths holds a value other than its meta default */
+export function modified(store: Store, paths: readonly string[]): Accessor<boolean> {
+  const watched = new Set(paths);
+  const read = (): boolean =>
+    paths.some((path) => {
+      const value = store.get(path);
+      return value !== undefined && Number(value) !== defaultValue(path);
+    });
+  return observed(read, (notify) =>
+    store.subscribe((change) => {
+      if (change.source === 'dump' || watched.has(change.path)) {
+        notify();
+      }
+    }),
+  );
 }
 
 /** Mirrors an external store into a signal that re-reads on each notify */

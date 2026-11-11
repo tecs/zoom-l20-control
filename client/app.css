@@ -517,7 +517,8 @@ button {
   pointer-events: none;
 }
 
-.fader-thumb::after, .fader-thumb::before {
+.fader-thumb::after,
+.fader-thumb::before {
   content: '';
   display: block;
   position: absolute;
@@ -528,11 +529,13 @@ button {
   border-radius: 2px;
 }
 
-#fxstrips .fader-thumb::after, #fxstrips .fader-thumb::before {
+#fxstrips .fader-thumb::after,
+#fxstrips .fader-thumb::before {
   background: #339;
 }
 
-.master .fader-thumb::after, .master .fader-thumb::before {
+.master .fader-thumb::after,
+.master .fader-thumb::before {
   background: #933;
 }
 
@@ -571,6 +574,11 @@ button {
   background: #2980b9;
   border-color: #2980b9;
   color: #fff;
+}
+
+.strip .edit.edited {
+  border-color: var(--warn);
+  color: var(--warn);
 }
 
 /* Detail / FX modals */

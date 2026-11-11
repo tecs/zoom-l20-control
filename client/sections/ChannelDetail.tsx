@@ -19,6 +19,8 @@ const CONTROLS: { key: StripControlKey; label: string; class?: string }[] = [
   { key: 'rec', label: 'Rec' },
 ];
 
+export const DETAIL_KEYS = CONTROLS.map((control) => control.key);
+
 export function ChannelDetail(props: { open: Accessor<number | null>; onClose: () => void }) {
   const { store } = useApp();
   let dialogEl!: HTMLDialogElement;

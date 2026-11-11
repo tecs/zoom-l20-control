@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { Store } from '../core/state/store.ts';
 import { MeterStore } from '../core/state/meters.ts';
-import { field, fieldRW, meterFrame } from './bridge.ts';
+import { field, fieldRW, meterFrame, modified } from './bridge.ts';
 import { P } from '../core/protocol/registry.ts';
 import type { MeterFrame } from '../core/messaging/meters.ts';
 import { inRootIt } from './testing/solid.ts';
@@ -81,6 +81,35 @@ describe('Store <> Solid signal bridge', () => {
         echo(store, 70);
         assert.equal(level(), 70);
       });
+    });
+  });
+
+  describe('modified()', () => {
+    const paths = [P.strip(0).pan, P.strip(0).phase];
+
+    inRootIt('is false until the first dump', () => {
+      const store = new Store();
+      assert.equal(modified(store, paths)(), false);
+    });
+
+    inRootIt('follows a local change away from the default and back', () => {
+      const store = new Store();
+      const changed = modified(store, paths);
+
+      store.dispatch(P.strip(0).phase, true);
+      assert.equal(changed(), true);
+      store.dispatch(P.strip(0).phase, false);
+      assert.equal(changed(), false);
+    });
+
+    inRootIt('compares each path with its own default', () => {
+      const store = new Store();
+      const changed = modified(store, paths);
+
+      store.dispatch(P.strip(0).pan, 50); // centre
+      assert.equal(changed(), false);
+      store.dispatch(P.strip(0).pan, 0);
+      assert.equal(changed(), true);
     });
   });
 

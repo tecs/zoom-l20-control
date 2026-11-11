@@ -10,6 +10,7 @@ import { Toggle } from '../components/Toggle.tsx';
 type ChannelStripProps = {
   index: number;
   bindings: StripBindings;
+  edited: Accessor<boolean>;
   mix: Accessor<number>;
   meter: Accessor<ChannelMeter | undefined>;
   stereo: boolean;
@@ -50,7 +51,13 @@ export function ChannelStrip(props: ChannelStripProps) {
         label="S"
         additionalClasses="solo"
       />
-      <button type="button" class="edit" onClick={() => props.openDetail(props.index)}>
+      <button
+        type="button"
+        class="edit"
+        classList={{ edited: props.edited() }}
+        title={props.edited() ? 'Channel settings (changed from default)' : 'Channel settings'}
+        onClick={() => props.openDetail(props.index)}
+      >
         ⋯
       </button>
     </div>
