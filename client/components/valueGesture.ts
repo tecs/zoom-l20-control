@@ -27,7 +27,7 @@ export type ValueGestureHandlers = {
 };
 
 /** Detent pointer travel */
-const SNAP_PX = 12;
+const SNAP_PX = 16;
 /** Max tap pointer travel */
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;

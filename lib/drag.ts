@@ -33,11 +33,11 @@ export const keySteps = (key: string): number => {
 
 export const FINE_SCALE = 0.1;
 
-const SIDEWAYS_FREE_PX = 30;
+const SIDEWAYS_FREE_PX = 50;
 
 export const sidewaysScale = (px: number): number => {
   const distance = Math.abs(px);
-  return distance <= SIDEWAYS_FREE_PX ? 1 : Math.max(FINE_SCALE, SIDEWAYS_FREE_PX / distance);
+  return distance <= SIDEWAYS_FREE_PX ? 1 : Math.max(FINE_SCALE, Math.pow(SIDEWAYS_FREE_PX / distance, 2));
 };
 
 export class ValueDrag {

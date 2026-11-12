@@ -118,13 +118,13 @@ describe('keySteps()', () => {
 
 describe('sidewaysScale()', () => {
   it('keeps full speed close to the axis, on either side', () => {
-    assert.equal(sidewaysScale(30), 1);
-    assert.equal(sidewaysScale(-30), 1);
+    assert.equal(sidewaysScale(50), 1);
+    assert.equal(sidewaysScale(-50), 1);
   });
 
   it('slows down further away', () => {
-    assert.equal(sidewaysScale(60), 0.5);
-    assert.equal(sidewaysScale(-120), 0.25);
+    assert.equal(sidewaysScale(100), 0.25);
+    assert.ok(sidewaysScale(70) > sidewaysScale(100));
   });
 
   it('never goes below the fine scale', () => {
