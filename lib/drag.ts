@@ -8,7 +8,12 @@ export interface Range {
 export interface DragOptions {
   travel: number;
   snaps?: readonly number[];
+  /** Min detent hold travel */
   snapPx?: number;
+  /** Detent hold time */
+  snapMs?: number;
+  /** Max detent hold travel */
+  maxSnapPx?: number;
 }
 
 type Detent = { point: number; offset: number; hold: number };
@@ -104,23 +109,37 @@ export class ValueDrag {
   private readonly perPx: number;
   private readonly snaps: readonly number[];
   private readonly snapPx: number;
+  private readonly snapMs: number;
+  private readonly maxSnapPx: number;
   private exact: number;
   private position: number;
+  private time: number | undefined;
+  /** Current px per ms */
+  private speed = 0;
   private detent: Detent | undefined;
 
-  constructor(value: number, position: number, range: Range, { travel, snaps = [], snapPx = 0 }: DragOptions) {
+  constructor(
+    value: number,
+    position: number,
+    range: Range,
+    { travel, snaps = [], snapPx = 0, snapMs = 0, maxSnapPx = snapPx }: DragOptions,
+  ) {
     this.range = range;
     this.perPx = (range.max - range.min) / travel;
     this.snaps = snaps;
     this.snapPx = snapPx;
+    this.snapMs = snapMs;
+    this.maxSnapPx = maxSnapPx;
     this.exact = clamp(value, range);
     this.position = position;
     this.detent = snaps.includes(this.exact) ? { point: this.exact, offset: 0, hold: snapPx } : undefined;
   }
 
-  move(position: number, scale = 1): number {
+  move(position: number, scale = 1, time?: number): number {
     let px = position - this.position;
     this.position = position;
+    this.speed = time === undefined || this.time === undefined ? 0 : Math.abs(px) / Math.max(1, time - this.time);
+    this.time = time;
 
     const fine = scale < 1;
     if (fine && this.detent) {
@@ -149,6 +168,10 @@ export class ValueDrag {
     return offset - Math.sign(offset) * detent.hold;
   }
 
+  private holdPx(): number {
+    return clamp(this.speed * this.snapMs, { min: this.snapPx, max: Math.max(this.snapPx, this.maxSnapPx) });
+  }
+
   private slide(px: number, scale: number, snaps: readonly number[]): number {
     const from = this.exact;
     const to = clamp(from + px * this.perPx * scale, this.range);
@@ -160,7 +183,7 @@ export class ValueDrag {
       this.exact = to;
       return 0;
     }
-    this.detent = { point, offset: 0, hold: this.snapPx };
+    this.detent = { point, offset: 0, hold: this.holdPx() };
     return px - (point - from) / (this.perPx * scale);
   }
 }

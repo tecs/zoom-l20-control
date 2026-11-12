@@ -140,6 +140,73 @@ describe('ValueDrag', () => {
   });
 });
 
+describe('TapTracker', () => {
+  const options = { tapPx: 4, doubleTapMs: 300 };
+
+  const tapAt = (taps: TapTracker, time: number) => {
+    taps.down(10, 10);
+    return taps.up(time);
+  };
+
+  it('reports a press released in place as a tap', () => {
+    assert.equal(tapAt(new TapTracker(options), 0), 'tap');
+  });
+
+  it('keeps a press within the tap travel a tap', () => {
+    const taps = new TapTracker(options);
+    taps.down(10, 10);
+    assert.equal(taps.move(13, 10), undefined);
+    assert.equal(taps.up(0), 'tap');
+  });
+
+  it('turns a press into a drag past the tap travel, with the offset from the press start', () => {
+    const taps = new TapTracker(options);
+    taps.down(10, 10);
+    assert.deepEqual(taps.move(13, 14), { x: 3, y: 4 });
+    assert.deepEqual(taps.move(12, 15), { x: 2, y: 5 });
+    assert.equal(taps.up(0), 'none');
+  });
+
+  it('stays a drag when the pointer comes back to the press start', () => {
+    const taps = new TapTracker(options);
+    taps.down(10, 10);
+    taps.move(20, 10);
+    assert.deepEqual(taps.move(10, 10), { x: 0, y: 0 });
+  });
+
+  it('ignores moves and releases without a press', () => {
+    const taps = new TapTracker(options);
+    assert.equal(taps.move(50, 50), undefined);
+    assert.equal(taps.up(0), 'none');
+  });
+
+  it('reports a second tap within the double-tap time as a double tap', () => {
+    const taps = new TapTracker(options);
+    tapAt(taps, 1000);
+    assert.equal(tapAt(taps, 1299), 'double');
+  });
+
+  it('reports a second tap after the double-tap time as a tap', () => {
+    const taps = new TapTracker(options);
+    tapAt(taps, 1000);
+    assert.equal(tapAt(taps, 1300), 'tap');
+  });
+
+  it('starts over after a double tap, so a third tap is a tap', () => {
+    const taps = new TapTracker(options);
+    tapAt(taps, 1000);
+    tapAt(taps, 1100);
+    assert.equal(tapAt(taps, 1200), 'tap');
+  });
+
+  it('drops a cancelled press', () => {
+    const taps = new TapTracker(options);
+    taps.down(10, 10);
+    taps.cancel();
+    assert.equal(taps.up(0), 'none');
+  });
+});
+
 describe('keySteps()', () => {
   it('raises on up and right, lowers on down and left', () => {
     assert.deepEqual(['ArrowUp', 'ArrowRight', 'ArrowDown', 'ArrowLeft'].map(keySteps), [1, 1, -1, -1]);

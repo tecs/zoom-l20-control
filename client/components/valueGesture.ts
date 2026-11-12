@@ -28,6 +28,9 @@ export type ValueGestureHandlers = {
 
 /** Detent pointer travel */
 const SNAP_PX = 16;
+/** Detent hold time at fast drag speeds */
+const SNAP_MS = 100;
+const MAX_SNAP_PX = 64;
 /** Max tap pointer travel */
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;
@@ -47,6 +50,8 @@ export function valueGesture(options: ValueGestureOptions): ValueGestureHandlers
       travel,
       snaps: options.snaps(),
       snapPx: SNAP_PX,
+      snapMs: SNAP_MS,
+      maxSnapPx: MAX_SNAP_PX,
     });
 
   return {
@@ -68,7 +73,7 @@ export function valueGesture(options: ValueGestureOptions): ValueGestureHandlers
       }
       drag ??= startDrag(event, options.travel(event.currentTarget));
       const scale = event.shiftKey ? FINE_SCALE : sidewaysScale(offset.x);
-      set(drag.move(-event.clientY, scale));
+      set(drag.move(-event.clientY, scale, event.timeStamp));
     },
 
     onPointerUp(event) {
