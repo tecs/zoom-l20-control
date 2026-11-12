@@ -1,7 +1,7 @@
 // Pointer, key and wheel handling shared by the value controls
 
 import type { Accessor, JSX } from 'solid-js';
-import { FINE_SCALE, ValueDrag, keySteps, sidewaysScale, stepValue, type Range } from '../../lib/drag.ts';
+import { FINE_SCALE, TapTracker, ValueDrag, keySteps, sidewaysScale, stepValue, type Range } from '../../lib/drag.ts';
 
 export type ValueGestureOptions = {
   value: Accessor<number>;
@@ -32,11 +32,9 @@ const SNAP_PX = 16;
 const TAP_PX = 4;
 const DOUBLE_TAP_MS = 300;
 
-type Press = { x: number; y: number; drag: ValueDrag | undefined };
-
 export function valueGesture(options: ValueGestureOptions): ValueGestureHandlers {
-  let press: Press | undefined;
-  let lastTapAt = -Infinity;
+  const taps = new TapTracker({ tapPx: TAP_PX, doubleTapMs: DOUBLE_TAP_MS });
+  let drag: ValueDrag | undefined;
 
   const set = (value: number): void => {
     if (value !== options.value()) {
@@ -59,40 +57,30 @@ export function valueGesture(options: ValueGestureOptions): ValueGestureHandlers
       event.preventDefault();
       event.currentTarget.setPointerCapture(event.pointerId);
       event.currentTarget.focus();
-      press = { x: event.clientX, y: event.clientY, drag: undefined };
+      taps.down(event.clientX, event.clientY);
+      drag = undefined;
     },
 
     onPointerMove(event) {
-      if (!press) {
+      const offset = taps.move(event.clientX, event.clientY);
+      if (!offset) {
         return;
       }
-      if (!press.drag) {
-        if (Math.hypot(event.clientX - press.x, event.clientY - press.y) <= TAP_PX) {
-          return;
-        }
-        press.drag = startDrag(event, options.travel(event.currentTarget));
-      }
-      const scale = event.shiftKey ? FINE_SCALE : sidewaysScale(event.clientX - press.x);
-      set(press.drag.move(-event.clientY, scale));
+      drag ??= startDrag(event, options.travel(event.currentTarget));
+      const scale = event.shiftKey ? FINE_SCALE : sidewaysScale(offset.x);
+      set(drag.move(-event.clientY, scale));
     },
 
     onPointerUp(event) {
-      const tap = press && !press.drag;
-      press = undefined;
-      if (!tap) {
-        return;
-      }
-      // Reset on double tap
-      if (event.timeStamp - lastTapAt < DOUBLE_TAP_MS) {
-        lastTapAt = -Infinity;
+      drag = undefined;
+      if (taps.up(event.timeStamp) === 'double') {
         set(options.resetValue());
-      } else {
-        lastTapAt = event.timeStamp;
       }
     },
 
     onPointerCancel() {
-      press = undefined;
+      taps.cancel();
+      drag = undefined;
     },
 
     onKeyDown(event) {

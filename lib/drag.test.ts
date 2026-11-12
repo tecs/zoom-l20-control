@@ -1,6 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { FINE_SCALE, ValueDrag, keySteps, sidewaysScale, stepValue } from './drag.ts';
+import { FINE_SCALE, TapTracker, ValueDrag, keySteps, sidewaysScale, stepValue } from './drag.ts';
 
 const range = { min: 0, max: 100 };
 const travel = 200;
@@ -85,6 +85,40 @@ describe('ValueDrag', () => {
       const drag = new ValueDrag(50, 500, range, snaps);
       assert.equal(drag.move(504), 50);
       assert.equal(drag.move(506), 51);
+    });
+
+    describe('and a speed-dependent hold', () => {
+      const timed = { ...snaps, snapMs: 10, maxSnapPx: 12 };
+
+      const reachAt = (speed: number) => {
+        const drag = new ValueDrag(40, 500, range, timed);
+        drag.move(500, 1, 0);
+        assert.equal(drag.move(520, 1, 20 / speed), 50);
+        return drag;
+      };
+
+      it('holds for the detent travel after a slow drag', () => {
+        const drag = reachAt(0.02);
+        assert.equal(drag.move(524, 1, 2000), 50);
+        assert.equal(drag.move(526, 1, 2100), 51);
+      });
+
+      it('holds for the hold time at the drag speed', () => {
+        const drag = reachAt(0.5);
+        assert.equal(drag.move(525, 1, 50), 50);
+        assert.equal(drag.move(527, 1, 60), 51);
+      });
+
+      it('holds no longer than the max detent travel after a fast drag', () => {
+        const drag = reachAt(2);
+        assert.equal(drag.move(532, 1, 20), 50);
+        assert.equal(drag.move(534, 1, 30), 51);
+      });
+
+      it('keeps the hold it caught with when the drag slows down', () => {
+        const drag = reachAt(2);
+        assert.equal(drag.move(531, 1, 5000), 50);
+      });
     });
 
     it('does not catch in fine mode', () => {

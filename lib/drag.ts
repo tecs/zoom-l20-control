@@ -11,7 +11,7 @@ export interface DragOptions {
   snapPx?: number;
 }
 
-type Detent = { point: number; offset: number };
+type Detent = { point: number; offset: number; hold: number };
 
 export const clamp = (value: number, { min, max }: Range): number => Math.min(max, Math.max(min, value));
 
@@ -40,6 +40,65 @@ export const sidewaysScale = (px: number): number => {
   return distance <= SIDEWAYS_FREE_PX ? 1 : Math.max(FINE_SCALE, Math.pow(SIDEWAYS_FREE_PX / distance, 2));
 };
 
+export interface TapOptions {
+  /** Max pointer travel of a tap */
+  tapPx: number;
+  doubleTapMs: number;
+}
+
+export interface Offset {
+  x: number;
+  y: number;
+}
+
+export type Tap = 'none' | 'tap' | 'double';
+
+export class TapTracker {
+  private readonly tapPx: number;
+  private readonly doubleTapMs: number;
+  private origin: Offset | undefined;
+  private dragging = false;
+  private lastTapAt = -Infinity;
+
+  constructor({ tapPx, doubleTapMs }: TapOptions) {
+    this.tapPx = tapPx;
+    this.doubleTapMs = doubleTapMs;
+  }
+
+  down(x: number, y: number): void {
+    this.origin = { x, y };
+    this.dragging = false;
+  }
+
+  move(x: number, y: number): Offset | undefined {
+    if (!this.origin) {
+      return undefined;
+    }
+    const offset = { x: x - this.origin.x, y: y - this.origin.y };
+    this.dragging ||= Math.hypot(offset.x, offset.y) > this.tapPx;
+    return this.dragging ? offset : undefined;
+  }
+
+  up(time: number): Tap {
+    const tap = this.origin && !this.dragging;
+    this.cancel();
+    if (!tap) {
+      return 'none';
+    }
+    if (time - this.lastTapAt < this.doubleTapMs) {
+      this.lastTapAt = -Infinity;
+      return 'double';
+    }
+    this.lastTapAt = time;
+    return 'tap';
+  }
+
+  cancel(): void {
+    this.origin = undefined;
+    this.dragging = false;
+  }
+}
+
 export class ValueDrag {
   private readonly range: Range;
   private readonly perPx: number;
@@ -56,7 +115,7 @@ export class ValueDrag {
     this.snapPx = snapPx;
     this.exact = clamp(value, range);
     this.position = position;
-    this.detent = snaps.includes(this.exact) ? { point: this.exact, offset: 0 } : undefined;
+    this.detent = snaps.includes(this.exact) ? { point: this.exact, offset: 0, hold: snapPx } : undefined;
   }
 
   move(position: number, scale = 1): number {
@@ -81,13 +140,13 @@ export class ValueDrag {
 
   private holdDetent(detent: Detent, px: number): number {
     const offset = detent.offset + px;
-    if (Math.abs(offset) <= this.snapPx) {
+    if (Math.abs(offset) <= detent.hold) {
       detent.offset = offset;
       return 0;
     }
     this.exact = detent.point;
     this.detent = undefined;
-    return offset - Math.sign(offset) * this.snapPx;
+    return offset - Math.sign(offset) * detent.hold;
   }
 
   private slide(px: number, scale: number, snaps: readonly number[]): number {
@@ -101,7 +160,7 @@ export class ValueDrag {
       this.exact = to;
       return 0;
     }
-    this.detent = { point, offset: 0 };
+    this.detent = { point, offset: 0, hold: this.snapPx };
     return px - (point - from) / (this.perPx * scale);
   }
 }
