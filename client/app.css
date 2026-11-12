@@ -536,6 +536,11 @@ button {
   background: #933;
 }
 
+#outputs .fader-thumb::after,
+#outputs .fader-thumb::before {
+  background: #363;
+}
+
 .fader-thumb::after {
   top: 100%;
 }
