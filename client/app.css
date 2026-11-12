@@ -579,6 +579,18 @@ button {
   stroke: #44d;
 }
 
+.range-ctrl-pan .knob-value {
+  stroke: #d44;
+}
+
+.range-ctrl-eqHi .knob-value,
+.range-ctrl-eqMidF .knob-value,
+.range-ctrl-eqMid .knob-value,
+.range-ctrl-eqLo .knob-value,
+.range-ctrl-lowCut .knob-value {
+  stroke: #4a4;
+}
+
 .knob-pointer {
   stroke: #cfd3d8;
   stroke-width: 2;
@@ -678,13 +690,6 @@ dialog.modal::backdrop {
 
 .range-ctrl .ctrl-label {
   white-space: nowrap;
-}
-
-.range-ctrl .slider {
-  -webkit-appearance: slider-vertical;
-  appearance: slider-vertical;
-  width: 22px;
-  height: 90px;
 }
 
 .range-ctrl .readout {

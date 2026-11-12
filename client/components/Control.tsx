@@ -5,9 +5,10 @@ import type { Store } from '../../core/state/store.ts';
 import { BY_PATH } from '../../core/protocol/registry.ts';
 import { asPath, assertNever } from '../../core/protocol/valuetypes.ts';
 import { formatValue } from '../../core/format.ts';
-import { defaultValue } from '../../core/protocol/meta.ts';
+import { defaultValue, metaFor } from '../../core/protocol/meta.ts';
 import { fieldRW } from '../bridge.ts';
 import { Toggle } from './Toggle.tsx';
+import { Knob } from './Knob.tsx';
 import { toClassList } from '../infra/jsx.ts';
 
 export interface ControlOptions {
@@ -56,17 +57,20 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
     case 'u14': {
       const [value, setValue] = fieldRW<number>(store, asPath<number>(path));
       const shown = (): number => value() ?? defaultValue(path);
-      const { min, max } = type;
+      const range = { min: type.min, max: type.max };
+      const unity = metaFor(path)?.unity;
+      const snaps = unity === undefined ? [] : [unity];
       return (
-        <div class="range-ctrl">
+        <div class="range-ctrl" classList={toClassList('range-ctrl-' + path.split('.').pop())}>
           <span class="ctrl-label">{label}</span>
-          <input
-            type="range"
-            class="slider compact"
-            min={String(min)}
-            max={String(max)}
-            value={shown()}
-            onInput={(e) => setValue(Number(e.currentTarget.value))}
+          <Knob
+            value={shown}
+            range={() => range}
+            snaps={() => snaps}
+            resetValue={() => defaultValue(path)}
+            onInput={setValue}
+            label={label}
+            valueText={() => formatValue(path, shown())}
           />
           <span class="readout">{formatValue(path, shown(), options.bare)}</span>
         </div>
