@@ -1,9 +1,10 @@
 import { For, createEffect, type Accessor } from 'solid-js';
-import { EQ_GAIN_FLAT, LAYOUT, P, rangeOf } from '../../core/protocol/registry.ts';
+import { EQ_GAIN_FLAT, LAYOUT, P } from '../../core/protocol/registry.ts';
 import { GEQ_FREQS, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
+import { Fader } from '../components/Fader.tsx';
 
 type BandSliderProps = {
   path: string;
@@ -27,18 +28,16 @@ function OnToggle() {
 }
 
 function BandSlider(props: BandSliderProps) {
-  const range = (): { min: number; max: number } => rangeOf(props.path);
   const raw = (): number => props.rw[0]() ?? defaultValue(props.path);
   return (
     <div class="range-ctrl">
       <span class="ctrl-label">{props.label}</span>
-      <input
-        type="range"
-        class="slider compact"
-        min={range().min}
-        max={range().max}
-        value={raw()}
-        onInput={(e) => props.rw[1](Number(e.currentTarget.value))}
+      <Fader
+        path={() => props.path}
+        value={raw}
+        onInput={(value) => props.rw[1](value)}
+        label={`Graphic EQ ${props.label}`}
+        valueText={() => formatValue(props.path, raw())}
       />
       <span class="readout">{formatValue(props.path, raw(), true)}</span>
     </div>

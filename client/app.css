@@ -488,6 +488,10 @@ button {
   margin-bottom: 10px;
 }
 
+.geq-bands .fader {
+  width: 18px;
+}
+
 .fader:focus-visible {
   outline: 1px solid #666;
   outline-offset: 2px;
@@ -657,6 +661,10 @@ dialog.modal::backdrop {
   min-width: 48px;
   text-align: center;
   min-height: 14px;
+}
+
+.geq-bands .range-ctrl .readout {
+  min-width: 36px;
 }
 
 .range-ctrl .sel {
