@@ -45,6 +45,7 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
           <span class="ctrl-label">{label}</span>
           <select
             class="sel"
+            name={path}
             value={String(value() ?? defaultValue(path))}
             onChange={(e) => setValue(Number(e.currentTarget.value))}
           >

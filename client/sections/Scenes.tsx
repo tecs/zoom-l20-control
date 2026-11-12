@@ -78,6 +78,7 @@ export function Scenes(props: { press: (idx: number) => void | Promise<void> }) 
         <span>Tempo</span>
         <input
           type="number"
+          name={P.tempo}
           min={MIN_BPM}
           max={MAX_BPM}
           step="0.1"

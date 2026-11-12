@@ -11,6 +11,7 @@ type SettingsProps = {
 };
 
 type NumberInputProps = {
+  name: string;
   value: Accessor<number>;
   onCommit(value: number): void;
   min?: number;
@@ -24,6 +25,7 @@ const NumberInput = (props: NumberInputProps) => (
   <span class="setting-num">
     <input
       type="number"
+      name={props.name}
       min={props.min}
       max={props.max}
       step={props.step}
@@ -68,6 +70,7 @@ function settingRow(settings: SettingsStore, schema: SettingSchemaEntry): JSX.El
         />
       ) : (
         <NumberInput
+          name={schema.key}
           value={() => Number(value())}
           onCommit={(newValue) => settings.set(schema.key, newValue)}
           min={schema.min}

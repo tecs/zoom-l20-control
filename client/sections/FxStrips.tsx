@@ -1,5 +1,5 @@
 import { For, createEffect, type Accessor } from 'solid-js';
-import { LAYOUT } from '../../core/protocol/registry.ts';
+import { LAYOUT, P } from '../../core/protocol/registry.ts';
 import { FX_DESCRIPTIONS, fxKnob, fxKnobDefault, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
 import { FX_NAMES, defaultValue } from '../../core/protocol/meta.ts';
 import { formatValue } from '../../core/format.ts';
@@ -157,7 +157,12 @@ function FxPanel(props: FxPanelProps) {
       <div class="fx-effect-col">
         <div class="range-ctrl">
           <span class="ctrl-label">Effect</span>
-          <select class="sel" value={String(effect())} onChange={(e) => setEffect(Number(e.currentTarget.value))}>
+          <select
+            class="sel"
+            name={P.fx(props.index).effect}
+            value={String(effect())}
+            onChange={(e) => setEffect(Number(e.currentTarget.value))}
+          >
             <For each={props.bindings.labels}>
               {(name, index) => <option value={String(index())}>{`${index()}: ${name}`}</option>}
             </For>

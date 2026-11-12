@@ -77,7 +77,7 @@ export function LogPane(props: LogPaneProps) {
         <div class="log-actions">
           <label class="log-level">
             lvl
-            <select value={minLevel()} onChange={(e) => setMinLevel(e.currentTarget.value as LogLevel)}>
+            <select name="logLevel" value={minLevel()} onChange={(e) => setMinLevel(e.currentTarget.value as LogLevel)}>
               <For each={LOG_LEVELS}>{(level) => <option value={level}>{level}</option>}</For>
             </select>
           </label>
