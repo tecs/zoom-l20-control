@@ -8,6 +8,7 @@ import { fxFaceBindings, fxPanelBindings, type FxFaceBindings, type FxPanelBindi
 import { useApp } from '../context.ts';
 import { Meter, type Peaks } from '../components/Meter.tsx';
 import { Fader } from '../components/Fader.tsx';
+import { Knob } from '../components/Knob.tsx';
 import { Toggle } from '../components/Toggle.tsx';
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
 
@@ -110,8 +111,8 @@ export function FxStrips(props: FxStripsProps) {
 }
 
 function FxKnob(props: FxKnobProps) {
-  const getValue = (): number =>
-    props.rw[0]() ?? fxKnobDefault(props.index, props.effect(), props.knob) ?? spec().wire[0];
+  const resetValue = (): number => fxKnobDefault(props.index, props.effect(), props.knob) ?? spec().wire[0];
+  const getValue = (): number => props.rw[0]() ?? resetValue();
   const setValue = (value: number): void => props.rw[1](value);
 
   // These are driven by local props rather than desk echo, so that feedback is instant.
@@ -132,13 +133,13 @@ function FxKnob(props: FxKnobProps) {
   return (
     <div class="range-ctrl">
       <span class="ctrl-label">{label()}</span>
-      <input
-        type="range"
-        class="slider"
-        min={String(getMin())}
-        max={String(getMax())}
-        value={getValue()}
-        onInput={(e) => setValue(Number(e.currentTarget.value))}
+      <Knob
+        value={getValue}
+        range={() => ({ min: getMin(), max: getMax() })}
+        resetValue={resetValue}
+        onInput={setValue}
+        label={`${FX_NAMES[props.index] ?? 'FX'} ${label()}`}
+        valueText={readout}
       />
       <span class="readout">{readout()}</span>
     </div>

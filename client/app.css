@@ -553,6 +553,38 @@ button {
   bottom: 100%;
 }
 
+.knob {
+  display: flex;
+  touch-action: none;
+  user-select: none;
+  cursor: ns-resize;
+  border-radius: 50%;
+}
+
+.knob:focus-visible {
+  outline: 1px solid #666;
+  outline-offset: 2px;
+}
+
+.knob svg {
+  fill: none;
+  stroke-width: 4;
+}
+
+.knob-track {
+  stroke: #000;
+}
+
+.knob-value {
+  stroke: #44d;
+}
+
+.knob-pointer {
+  stroke: #cfd3d8;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
 .strip button {
   width: 100%;
   padding: 3px 0;
