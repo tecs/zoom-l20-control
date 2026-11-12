@@ -8,6 +8,7 @@ type KnobProps = {
   /** Double-tap target */
   resetValue: Accessor<number>;
   snaps?: Accessor<readonly number[]>;
+  origin?: number | undefined;
   onInput(value: number): void;
   label: string;
   valueText: Accessor<string>;
@@ -30,9 +31,16 @@ const pointAt = (deg: number): string => {
 const ARC = `M ${pointAt(-SWEEP_DEG / 2)} A ${RADIUS} ${RADIUS} 0 1 1 ${pointAt(SWEEP_DEG / 2)}`;
 
 export function Knob(props: KnobProps) {
-  const fraction = (): number => {
+  const fractionOf = (value: number): number => {
     const { min, max } = props.range();
-    return (props.value() - min) / (max - min);
+    return (value - min) / (max - min);
+  };
+  const fraction = (): number => fractionOf(props.value());
+
+  const valueArc = (): { start: number; length: number } => {
+    const origin = fractionOf(props.origin ?? props.range().min);
+    const value = fraction();
+    return { start: Math.min(origin, value) * 100, length: Math.abs(value - origin) * 100 };
   };
 
   const gesture = valueGesture({
@@ -64,7 +72,13 @@ export function Knob(props: KnobProps) {
     >
       <svg viewBox={`0 0 ${SIZE} ${SIZE}`} width={SIZE} height={SIZE} aria-hidden="true">
         <path class="knob-track" d={ARC} pathLength="100" />
-        <path class="knob-value" d={ARC} pathLength="100" stroke-dasharray={`${fraction() * 100} 100`} />
+        <path
+          class="knob-value"
+          d={ARC}
+          pathLength="100"
+          stroke-dasharray={`${valueArc().length} 100`}
+          stroke-dashoffset={-valueArc().start}
+        />
         <line
           class="knob-pointer"
           x1={CENTER}

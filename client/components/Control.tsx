@@ -67,6 +67,7 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
             value={shown}
             range={() => range}
             snaps={() => snaps}
+            origin={type.kind === 'scalar' ? type.center : undefined}
             resetValue={() => defaultValue(path)}
             onInput={setValue}
             label={label}
