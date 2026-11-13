@@ -6,6 +6,8 @@ import { TransportState } from '../core/state/transport.ts';
 import { Log } from '../core/state/log.ts';
 import { BluetoothTransport } from './infra/transport.ts';
 import { WakeLock } from './infra/wakelock.ts';
+import { platform } from './infra/browser.ts';
+import { corruptDumpHint } from './infra/hints.ts';
 import { Settings, SETTINGS_SCHEMA } from './app/settings.ts';
 import { Session } from './app/session.ts';
 import { AppCtx, type AppState } from './context.ts';
@@ -27,6 +29,7 @@ const session = new Session({
   meters,
   sceneState,
   transportState,
+  corruptDumpHint: corruptDumpHint(platform()),
 });
 
 const app: AppState = { session, store, meters, settings, log, sceneState, transportState };

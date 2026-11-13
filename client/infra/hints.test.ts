@@ -1,6 +1,12 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { adapterNotFoundHint, bluetoothUnavailableHint, writeErrorHint, type Platform } from './hints.ts';
+import {
+  adapterNotFoundHint,
+  bluetoothUnavailableHint,
+  corruptDumpHint,
+  writeErrorHint,
+  type Platform,
+} from './hints.ts';
 
 const chromeOnMac: Platform = { secureContext: true, ios: false, linux: false, chromium: true, brave: false };
 
@@ -47,6 +53,13 @@ describe('adapterNotFoundHint()', () => {
 
   it('asks to turn Bluetooth on elsewhere', () => {
     assert.match(adapterNotFoundHint(chromeOnMac), /Turn Bluetooth on/);
+  });
+});
+
+describe('corruptDumpHint()', () => {
+  it('names the WirePlumber BLE-MIDI monitor on Linux only', () => {
+    assert.match(corruptDumpHint({ ...chromeOnMac, linux: true }) ?? '', /monitor\.bluez-midi/);
+    assert.equal(corruptDumpHint(chromeOnMac), null);
   });
 });
 

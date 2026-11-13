@@ -116,7 +116,25 @@ To view on a phones or a tablet, the client must be served over HTTPS. The easie
 
    The path to `bluetoothd` can differ between distributions - check with `systemctl cat bluetooth`.
 
-3. **Turn on Web Bluetooth in the browser:**
+3. **If you use PipeWire, stop it from reading the mixer.**
+   PipeWire's Bluetooth MIDI support reads from the mixer after the browser connects, and the mixer's reply
+   corrupts the data the browser receivesr.
+
+   > **WARNING:** This also removes the PipeWire MIDI port of other Bluetooth MIDI devices (Bluetooth audio and USB MIDI are unaffected)
+
+   ```bash
+   mkdir -p ~/.config/wireplumber/wireplumber.conf.d
+   cat > ~/.config/wireplumber/wireplumber.conf.d/90-no-bluez-midi.conf <<'EOF'
+   wireplumber.profiles = {
+     main = {
+       monitor.bluez-midi = disabled
+     }
+   }
+   EOF
+   systemctl --user restart wireplumber
+   ```
+
+4. **Turn on Web Bluetooth in the browser:**
    - `chrome://flags/#enable-experimental-web-platform-features` set to **Enabled**
    - Brave also needs `brave://flags/#brave-web-bluetooth-api`
    - relaunch the browser

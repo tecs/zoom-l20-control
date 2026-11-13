@@ -4,6 +4,7 @@ import { Publisher } from '../../lib/publisher.ts';
 import { describeError } from '../../lib/errors.ts';
 import { HANDSHAKE, DUMP_REQUEST, meterSelect } from '../../core/protocol/session.ts';
 import { COMMAND, isZoomSysex } from '../../core/protocol/sysex.ts';
+import { DUMP_LENGTH } from '../../core/protocol/dump.ts';
 import { isSceneOnEcho } from '../../core/protocol/scenes.ts';
 import { buttonPress } from '../../core/protocol/buttons.ts';
 import { parseTransport } from '../../core/protocol/transport.ts';
@@ -31,6 +32,7 @@ export interface SessionDependencies {
   meters: MeterStore;
   sceneState: SceneState;
   transportState: TransportState;
+  corruptDumpHint?: string | null;
 }
 
 export class Session extends Publisher<[status: TransportStatus, setupProblem: string | null]> {
@@ -41,6 +43,7 @@ export class Session extends Publisher<[status: TransportStatus, setupProblem: s
   private meters: MeterStore;
   private sceneState: SceneState;
   private transportState: TransportState;
+  private corruptDumpHint: string | null;
 
   private currentStatus: TransportStatus = TRANSPORT_STATUS.DISCONNECTED;
   private currentSetupProblem: string | null = null;
@@ -48,7 +51,16 @@ export class Session extends Publisher<[status: TransportStatus, setupProblem: s
   /** 14-bit reassembly for TX logging */
   private txPair: Pair = {};
 
-  constructor({ transport, wakeLock, log, store, meters, sceneState, transportState }: SessionDependencies) {
+  constructor({
+    transport,
+    wakeLock,
+    log,
+    store,
+    meters,
+    sceneState,
+    transportState,
+    corruptDumpHint = null,
+  }: SessionDependencies) {
     super();
     this.transport = transport;
     this.wakeLock = wakeLock;
@@ -57,6 +69,7 @@ export class Session extends Publisher<[status: TransportStatus, setupProblem: s
     this.meters = meters;
     this.sceneState = sceneState;
     this.transportState = transportState;
+    this.corruptDumpHint = corruptDumpHint;
 
     this.store.onSend = (messages) => this.onSend(messages);
     this.transport.onMessage((message) => this.onMessage(message));
@@ -208,8 +221,13 @@ export class Session extends Publisher<[status: TransportStatus, setupProblem: s
   }
 
   private loadDump(dump: Uint8Array) {
-    this.store.loadDump(dump);
     this.log.debug(`dump(${dump.length}) ${hex(dump)}`, 'sysex');
+    if (dump.length !== DUMP_LENGTH) {
+      const error = `state dump rejected: ${dump.length} bytes, expected ${DUMP_LENGTH}`;
+      this.log.error(this.corruptDumpHint ? `${error}. ${this.corruptDumpHint}` : error, 'status');
+      return;
+    }
+    this.store.loadDump(dump);
 
     const readout = calibrationReadout(this.store);
     for (const { family, unit, samples } of readout) {

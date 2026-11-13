@@ -3,6 +3,8 @@ import type { Value } from './valuetypes.ts';
 
 export type State = Record<string, unknown>;
 
+export const DUMP_LENGTH = 656;
+
 export const setPath = (obj: State, path: string, value: unknown): void =>
   path.split('.').forEach((segment, i, segments) => {
     if (i === segments.length - 1) {

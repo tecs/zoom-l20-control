@@ -14,7 +14,7 @@ import { TRANSPORT_STATUS, type TransportStatus } from '../infra/transport.ts';
 import { fakeTransport, fakeWakeLock } from '../testing/transport.ts';
 import { flush } from '../testing/async.ts';
 
-function setup() {
+function setup(options: { corruptDumpHint?: string } = {}) {
   const transport = fakeTransport();
   const wakeLock = fakeWakeLock();
 
@@ -23,7 +23,7 @@ function setup() {
   const meters = new MeterStore();
   const sceneState = new SceneState();
   const transportState = new TransportState();
-  const session = new Session({ transport, wakeLock, log, store, meters, sceneState, transportState });
+  const session = new Session({ transport, wakeLock, log, store, meters, sceneState, transportState, ...options });
 
   return { session, transport, wakeLock, log, store, meters, sceneState, transportState };
 }
@@ -69,6 +69,30 @@ describe('Session', () => {
       const { transport, store } = setup();
       transport.receive({ type: 'sysex', bytes: BASELINE! });
       assert.equal(store.get('fx.1.tone'), 50);
+    });
+
+    describe('with a dump of the wrong length', () => {
+      // One extra 19-byte BLE-MIDI packet, as PipeWire's read causes on Linux
+      const duplicated = BASELINE && Uint8Array.from([...BASELINE.slice(0, 246), ...BASELINE.slice(227)]);
+
+      it('rejects it at error level, leaving the store alone', { skip: !duplicated }, () => {
+        const { transport, store, log } = setup();
+        transport.receive({ type: 'sysex', bytes: duplicated! });
+        assert.equal(store.get('fx.1.tone'), undefined);
+        assert.deepEqual(
+          log.entries('error').map(({ text }) => text),
+          ['state dump rejected: 675 bytes, expected 656'],
+        );
+      });
+
+      it('adds the platform hint', { skip: !duplicated }, () => {
+        const { transport, log } = setup({ corruptDumpHint: 'Turn it off.' });
+        transport.receive({ type: 'sysex', bytes: duplicated! });
+        assert.deepEqual(
+          log.entries('error').map(({ text }) => text),
+          ['state dump rejected: 675 bytes, expected 656. Turn it off.'],
+        );
+      });
     });
 
     it('keeps only meter frames for the selected mix', () => {

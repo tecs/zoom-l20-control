@@ -50,6 +50,12 @@ export function adapterNotFoundHint({ ios, linux }: Platform): string {
   return 'No Bluetooth adapter available. Turn Bluetooth on, then connect.';
 }
 
+export function corruptDumpHint({ linux }: Platform): string | null {
+  return linux
+    ? "PipeWire's Bluetooth MIDI monitor is probably interfering with the connection to the mixer - turn off monitor.bluez-midi in WirePlumber, then reconnect."
+    : null;
+}
+
 export function writeErrorHint({ linux }: Platform): string | null {
   return linux
     ? "If every write fails right after connecting, BlueZ's midi plugin holds the mixer: run bluetoothd with -P midi. Don't pair the mixer."
