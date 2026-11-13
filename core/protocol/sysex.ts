@@ -5,7 +5,7 @@ const ZOOM_ID = 0x52;
 const ZOOM_HEADER = [SYSEX_START, ZOOM_ID, 0x00, 0x00];
 
 export const COMMAND = {
-  PAGED_REQUEST: 0x07,
+  SCENE_REQUEST: 0x07,
   SCENE_RECALL: 0x08,
   STATE_DUMP: 0x2a,
   DUMP_REQUEST: 0x2b,
@@ -13,6 +13,7 @@ export const COMMAND = {
   EVENT: 0x31,
   /** `32 00 01 0N` - scene N active, `32 00 00 0N` - scene N saved */
   SCENE: 0x32,
+  METER_ENABLE: 0x50,
 } as const;
 
 export const isZoomSysex = (bytes: ArrayLike<number>): boolean => bytes[1] === ZOOM_ID;

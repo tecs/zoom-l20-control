@@ -1,6 +1,6 @@
-// Fixed SysEx the app sends to the desk
+// Fixed messages the client sends to the desk
 
-import { ALL_DEVICES, identityRequest, universalSysex, type ShortMessage } from './midi.ts';
+import { identityRequest, type ShortMessage } from './midi.ts';
 import { COMMAND, zoomSysex } from './sysex.ts';
 import { buttonMessage } from './buttons.ts';
 
@@ -10,21 +10,13 @@ const DESK_DEVICE = 0x00;
 
 export const DUMP_REQUEST = zoomSysex(COMMAND.DUMP_REQUEST);
 
+const SCENE_LIST = 0x00;
+
 export const HANDSHAKE = [
-  universalSysex(
-    ALL_DEVICES,
-    // As captured from the iPad app
-    ...[
-      0x0d, 0x70, 0x02, 0x74, 0x57, 0x2a, 0x66, 0x7f, 0x7f, 0x7f, 0x7f, 0x11, 0x00, 0x00, 0x01, 0x00, 0x01, 0x00, 0x02,
-      0x00, 0x00, 0x00, 0x1c, 0x00, 0x00, 0x01, 0x00, 0x00,
-    ],
-  ),
   identityRequest(DESK_DEVICE),
   DUMP_REQUEST,
-  zoomSysex(COMMAND.PAGED_REQUEST, 0x00),
-  zoomSysex(COMMAND.PAGED_REQUEST, 0x01),
-  zoomSysex(COMMAND.PAGED_REQUEST, 0x02),
-  zoomSysex(0x50), // unknown
+  zoomSysex(COMMAND.SCENE_REQUEST, SCENE_LIST),
+  zoomSysex(COMMAND.METER_ENABLE),
 ];
 
 /**
