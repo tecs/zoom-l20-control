@@ -1,7 +1,8 @@
 import { For, createEffect, type Accessor } from 'solid-js';
 import { EQ_GAIN_FLAT, LAYOUT, P } from '../../core/protocol/registry.ts';
 import { GEQ_FREQS, defaultValue } from '../../core/protocol/meta.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { Readout } from '../components/Readout.tsx';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import { Fader } from '../components/Fader.tsx';
@@ -39,7 +40,14 @@ function BandSlider(props: BandSliderProps) {
         label={`Graphic EQ ${props.label}`}
         valueText={() => formatValue(props.path, raw())}
       />
-      <span class="readout">{formatValue(props.path, raw(), true)}</span>
+      <Readout
+        class="readout"
+        text={() => formatValue(props.path, raw(), true)}
+        parse={(text) => parseValue(props.path, text)}
+        onInput={(value) => props.rw[1](value)}
+        label={`Graphic EQ ${props.label}`}
+        name={props.path}
+      />
     </div>
   );
 }

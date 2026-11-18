@@ -4,7 +4,8 @@ import { For, type JSX } from 'solid-js';
 import type { Store } from '../../core/state/store.ts';
 import { BY_PATH } from '../../core/protocol/registry.ts';
 import { asPath, assertNever } from '../../core/protocol/valuetypes.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { Readout } from './Readout.tsx';
 import { defaultValue, metaFor } from '../../core/protocol/meta.ts';
 import { fieldRW } from '../bridge.ts';
 import { Toggle } from './Toggle.tsx';
@@ -74,7 +75,14 @@ export function makeControl(store: Store, path: string, options: ControlOptions 
             label={label}
             valueText={() => formatValue(path, shown())}
           />
-          <span class="readout">{formatValue(path, shown(), options.bare)}</span>
+          <Readout
+            class="readout"
+            text={() => formatValue(path, shown(), options.bare)}
+            parse={(text) => parseValue(path, text)}
+            onInput={setValue}
+            label={label}
+            name={path}
+          />
         </div>
       );
     }

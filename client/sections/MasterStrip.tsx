@@ -1,6 +1,7 @@
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
 import { P } from '../../core/protocol/registry.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { Readout } from '../components/Readout.tsx';
 import { defaultValue } from '../../core/protocol/meta.ts';
 import { fieldRW, meterFrame, modified } from '../bridge.ts';
 import { useApp } from '../context.ts';
@@ -42,7 +43,14 @@ export function MasterStrip(props: MasterStripProps) {
         label="Master"
         valueText={() => formatValue(P.master.level, value())}
       />
-      <div class="strip-readout">{formatValue(P.master.level, value(), true)}</div>
+      <Readout
+        class="strip-readout"
+        text={() => formatValue(P.master.level, value(), true)}
+        parse={(text) => parseValue(P.master.level, text)}
+        onInput={setLevel}
+        label="Master"
+        name={P.master.level}
+      />
       <Toggle active={muted} onClick={() => setMuted(!muted())} label="M" />
       {recButton}
       <button

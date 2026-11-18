@@ -1,7 +1,8 @@
 import { For } from 'solid-js';
 import { P, MIX_LABELS, LAYOUT } from '../../core/protocol/registry.ts';
 import { defaultValue } from '../../core/protocol/meta.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { Readout } from '../components/Readout.tsx';
 import { fieldRW } from '../bridge.ts';
 import { useApp } from '../context.ts';
 import { Fader } from '../components/Fader.tsx';
@@ -33,7 +34,14 @@ export function Outputs() {
                     label={`Monitor ${label}`}
                     valueText={() => formatValue(path, value())}
                   />
-                  <span class="readout">{formatValue(path, value(), true)}</span>
+                  <Readout
+                    class="readout"
+                    text={() => formatValue(path, value(), true)}
+                    parse={(text) => parseValue(path, text)}
+                    onInput={setLevel}
+                    label={`Monitor ${label}`}
+                    name={path}
+                  />
                 </div>
               );
             }}

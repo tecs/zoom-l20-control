@@ -1,7 +1,8 @@
 import type { Accessor } from 'solid-js';
 import type { ChannelMeter } from '../../core/messaging/meters.ts';
 import { STRIP_NAMES, defaultValue } from '../../core/protocol/meta.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { Readout } from '../components/Readout.tsx';
 import type { StripBindings } from '../bindings.ts';
 import { Meter, type Peaks } from '../components/Meter.tsx';
 import { Fader } from '../components/Fader.tsx';
@@ -39,7 +40,14 @@ export function ChannelStrip(props: ChannelStripProps) {
         label={name()}
         valueText={() => formatValue(path(), value())}
       />
-      <div class="strip-readout">{formatValue(path(), value(), true)}</div>
+      <Readout
+        class="strip-readout"
+        text={() => formatValue(path(), value(), true)}
+        parse={(text) => parseValue(path(), text)}
+        onInput={setValue}
+        label={name()}
+        name={path()}
+      />
       <Toggle
         active={props.bindings.mute[0]}
         onClick={() => props.bindings.mute[1](!props.bindings.mute[0]())}

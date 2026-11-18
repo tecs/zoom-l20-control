@@ -223,6 +223,46 @@ button {
   white-space: nowrap;
 }
 
+.readout-button {
+  background: none;
+  border: none;
+  border-radius: 2px;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: text;
+}
+
+.readout-button:hover {
+  color: #e6e6e6;
+}
+
+.readout-button:focus-visible {
+  outline: 1px solid #666;
+  outline-offset: 1px;
+}
+
+.strip-readout.readout-button,
+.strip-readout.readout-input {
+  height: 18px;
+}
+
+.readout-input {
+  box-sizing: border-box;
+  width: 6ch;
+  padding: 0 2px;
+  font: inherit;
+  text-align: center;
+  color: #e6e6e6;
+  background: #1e2126;
+  border: 1px solid #666;
+  border-radius: 2px;
+}
+
+.readout-input[aria-invalid='true'] {
+  border-color: var(--bad);
+}
+
 #logpane {
   margin-top: 16px;
   border-top: 1px solid #262a30;

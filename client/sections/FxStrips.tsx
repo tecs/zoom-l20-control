@@ -2,7 +2,9 @@ import { For, createEffect, type Accessor } from 'solid-js';
 import { LAYOUT, P } from '../../core/protocol/registry.ts';
 import { FX_DESCRIPTIONS, fxKnob, fxKnobDefault, type FxKnobSpec } from '../../core/protocol/fxeffects.ts';
 import { FX_NAMES, defaultValue } from '../../core/protocol/meta.ts';
-import { formatValue } from '../../core/format.ts';
+import { formatValue, parseValue } from '../../core/format.ts';
+import { clamp } from '../../lib/drag.ts';
+import { Readout } from '../components/Readout.tsx';
 import { meterFrame } from '../bridge.ts';
 import { fxFaceBindings, fxPanelBindings, type FxFaceBindings, type FxPanelBindings, type RW } from '../bindings.ts';
 import { useApp } from '../context.ts';
@@ -65,7 +67,14 @@ function FxStrip(props: FxStripProps) {
         label={FX_NAMES[props.index] ?? 'FX'}
         valueText={() => formatValue(path(), value())}
       />
-      <div class="strip-readout">{formatValue(path(), value(), true)}</div>
+      <Readout
+        class="strip-readout"
+        text={() => formatValue(path(), value(), true)}
+        parse={(text) => parseValue(path(), text)}
+        onInput={setValue}
+        label={FX_NAMES[props.index] ?? 'FX'}
+        name={path()}
+      />
       <Toggle
         active={props.bindings.mute[0]}
         onClick={() => props.bindings.mute[1](!props.bindings.mute[0]())}
@@ -130,6 +139,22 @@ function FxKnob(props: FxKnobProps) {
     return `${Math.round(shown)}${unit}`;
   };
 
+  // Inverse of `readout()`
+  const parseReadout = (text: string): number | null => {
+    const input = text
+      .trim()
+      .toLowerCase()
+      .replace(/\s*ms$/, '');
+    const shown = Number(input);
+    if (input === '' || !Number.isFinite(shown)) {
+      return null;
+    }
+    const [displayMin, displayMax] = spec().display;
+    const min = getMin();
+    const max = getMax();
+    return clamp(Math.round(min + ((shown - displayMin) * (max - min)) / (displayMax - displayMin)), { min, max });
+  };
+
   return (
     <div class="range-ctrl">
       <span class="ctrl-label">{label()}</span>
@@ -141,7 +166,14 @@ function FxKnob(props: FxKnobProps) {
         label={`${FX_NAMES[props.index] ?? 'FX'} ${label()}`}
         valueText={readout}
       />
-      <span class="readout">{readout()}</span>
+      <Readout
+        class="readout"
+        text={readout}
+        parse={parseReadout}
+        onInput={setValue}
+        label={`${FX_NAMES[props.index] ?? 'FX'} ${label()}`}
+        name={P.fx(props.index)[props.knob]}
+      />
     </div>
   );
 }
